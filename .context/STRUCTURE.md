@@ -69,6 +69,6 @@ anansi/
 | `cmd/anansi` | CLI entry point. Parses flags, wires dependencies, handles SIGINT/SIGTERM. | `main()`, `AnansiConfig`, `ParseFlags()` |
 | `crawler` | Orchestrates the crawl. Owns worker pool, rate limiter, WaitGroup. Consumes from frontier, delegates to parser. | `Crawler`, `Config`, `Result` |
 | `frontier` | URL queue + visited tracking. Interface-based for swappability. | `Frontier` (interface), `InMemory` (impl) |
-| `parser` | Extracts `<a href>` links from HTML using tokenizer. No URL filtering - returns raw hrefs. | `ExtractLinks(io.Reader, *url.URL) []string` |
+| `parser` | Extracts `<a href>` links from HTML using tokenizer. No URL filtering — returns raw hrefs. | `ExtractLinks(ctx context.Context, r io.Reader) ([]string, error)` |
 | `normalizer` | Canonicalizes URLs: strips fragments, lowercases host, resolves relative paths. Pure functions. | `Normalize(base *url.URL, raw string) (*url.URL, error)` |
 | `robots` | Fetches and parses `robots.txt`. Checks URLs against Disallow rules. | `Rules`, `IsAllowed(path string) bool` |

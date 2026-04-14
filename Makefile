@@ -1,6 +1,6 @@
 # Apologies for any failed commands. This Makefile was built on Windows.
 
-.PHONY: build test lint run clean tidy update docker docker-run
+.PHONY: build test lint run clean tidy update setup docker docker-run
 
 BINARY  := bin\anansi.exe
 URL     ?= https://crawlme.monzo.com/
@@ -28,6 +28,11 @@ tidy:
 update: tidy
 	go get -u ./...
 	go mod tidy
+
+setup:
+	go install golang.org/x/tools/gopls@latest
+	go install github.com/go-delve/delve/cmd/dlv@latest
+	go install github.com/mgechev/revive@latest
 
 docker:
 	docker build -t anansi .

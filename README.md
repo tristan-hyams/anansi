@@ -2,11 +2,11 @@
 
 A single-domain web crawler written in Go. Given a starting URL, Anansi visits every reachable page on the same subdomain, printing each URL visited and the links found on that page.
 
-Named after [Anansi](https://en.wikipedia.org/wiki/Anansi), the West African spider of folklore — a weaver of webs and stories.
+Named after [Anansi](https://en.wikipedia.org/wiki/Anansi), the West African spider of folklore - a weaver of webs and stories.
 
 ## Getting Started
 
-Open the project using `anansi.code-workspace` for the best experience — it configures the debugger (F5), revive linter, and lint-on-save out of the box:
+Open the project using `anansi.code-workspace` for the best experience - it configures the debugger (F5), revive linter, and lint-on-save out of the box:
 
 ```
 File → Open Workspace from File → anansi.code-workspace
@@ -69,11 +69,11 @@ For detailed design decisions, trade-offs, and the URL processing pipeline, see 
 
 ### Design Trade-offs
 
-- **Worker pool over goroutine-per-URL** — predictable resource usage, configurable concurrency.
-- **Interface-based frontier** — in-memory for this scope. A production system would swap in Redis/RabbitMQ for restart durability and distributed crawling.
-- **Strict subdomain matching** — `crawlme.monzo.com` does not match `www.crawlme.monzo.com`. The spec says "limited to one subdomain"; strict matching is the safe interpretation.
-- **robots.txt respected** — fetched once at crawl start. `User-agent: *` Disallow rules honoured.
-- **Content-Type checked** — only `text/html` responses are parsed. Non-HTML resources are logged but not followed.
+- **Worker pool over goroutine-per-URL** - predictable resource usage, configurable concurrency.
+- **Interface-based frontier** - in-memory for this scope. A production system would swap in Redis/RabbitMQ for restart durability and distributed crawling.
+- **Strict subdomain matching** - `crawlme.monzo.com` does not match `www.crawlme.monzo.com`. The spec says "limited to one subdomain"; strict matching is the safe interpretation.
+- **robots.txt respected** - fetched once at crawl start. `User-agent: *` Disallow rules honoured.
+- **Content-Type checked** - only `text/html` responses are parsed. Non-HTML resources are logged but not followed.
 
 ### Known Limitations
 

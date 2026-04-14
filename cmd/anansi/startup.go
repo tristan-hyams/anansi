@@ -18,14 +18,16 @@ func ParseFlags() (*AnansiConfig, error) {
 
 	workers := flag.Int("workers", defaultWorkers, "number of concurrent workers")
 	rate := flag.Float64("rate", defaultRate, "max requests per second")
-	maxDepth := flag.Int("max-depth", 0, "maximum crawl depth (0 = unlimited)")
+	maxDepth := flag.Int("max-depth", defaultMaxDepth, "maximum crawl depth (0 = unlimited)")
 	timeout := flag.Duration("timeout", defaultTimeout, "HTTP request timeout")
-	logLevel := flag.String("log-level", "info", "log level (debug, info, warn, error)")
+	logLevel := flag.String("log-level", defaultLogLevel, "log level (debug, info, warn, error)")
 
 	flag.Usage = func() {
 		_, _ = fmt.Fprint(os.Stderr, "Usage: anansi [flags] <url>\n\nFlags:\n")
 		flag.PrintDefaults()
 	}
+
+	//revive:disable-next-line:deep-exit Sole CLI entry point, flag.Parse may os.Exit(2)
 	flag.Parse()
 
 	if flag.NArg() != 1 {
@@ -49,10 +51,12 @@ func ParseFlags() (*AnansiConfig, error) {
 	return &cfg, nil
 }
 
+// SetupSignalContext returns a context that is cancelled on SIGINT (Ctrl+C).
 func SetupSignalContext() (context.Context, context.CancelFunc) {
 	return signal.NotifyContext(context.Background(), os.Interrupt)
 }
 
+// SetupLogger configures slog with a JSON handler and the specified log level.
 func SetupLogger(cfg *AnansiConfig) *slog.Logger {
 	handler := slog.NewJSONHandler(os.Stderr, &slog.HandlerOptions{
 		Level: cfg.SlogLevel(),
