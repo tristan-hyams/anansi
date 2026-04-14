@@ -65,7 +65,7 @@ Anansi uses a **worker pool** with a buffered channel as a work queue. A global 
 | `normalizer` | URL canonicalization |
 | `robots` | robots.txt compliance |
 
-For detailed design decisions, trade-offs, and the URL processing pipeline, see [context/ARCH.md](context/ARCH.md).
+For detailed design decisions, trade-offs, and the URL processing pipeline, see [.context/ARCH.md](.context/ARCH.md).
 
 ### Design Trade-offs
 

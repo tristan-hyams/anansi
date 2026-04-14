@@ -112,9 +112,9 @@ make clean
 
 ## Agent Workflow
 
-- **Journal:** Read the latest entry in `context/journal/` at session start for continuity.
+- **Journal:** Read the latest entry in `.context/journal/` at session start for continuity.
 - **Naming:** `YYYY-MM-DD_NN.md` (date + sequence number per day).
 - **Content:** Context, decisions made, work done, next steps.
 - **Package source:** Read the relevant package source before modifying it.
 - **Tests alongside code:** Write tests in the same commit as the feature. Never skip `-race`.
-- **Context files are source of truth.** Do not duplicate rules or architecture in shim files. Update `context/` files directly.
+- **Context files are source of truth.** Do not duplicate rules or architecture in shim files. Update `.context/` files directly.

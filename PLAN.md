@@ -179,7 +179,7 @@ CLI entry point. Thin — all logic lives in packages.
 - [ ] Review test coverage: `go test -coverprofile=coverage.out ./... && go tool cover -html=coverage.out`
 - [ ] Verify `make docker-run` works end-to-end
 - [ ] Final pass on README.md
-- [ ] Update context/journal with completion entry
+- [ ] Update .context/journal with completion entry
 - [ ] Git: clean history, meaningful commits per phase
 
 **Exit criteria:** Submission-ready. Clean lint, good coverage, working Docker, clear README, documented decisions.

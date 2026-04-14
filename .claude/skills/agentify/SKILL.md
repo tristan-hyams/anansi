@@ -15,7 +15,7 @@ This pattern maximises context window efficacy by letting agents load only the p
 ## Step 1 — Discover repo layout
 
 - Determine the repo root (look for `.git/`, `go.mod`, `package.json`, `*.sln`, etc.)
-- **Detect context directory**: check for existing `context/`, `docs/`, or `doc/` directories containing `RULES.md` or `STRUCTURE.md`. If none found, ask the user which directory to use. Default suggestion: `context/`.
+- **Detect context directory**: check for existing `.context/`, `context/`, `docs/`, or `doc/` directories containing `RULES.md` or `STRUCTURE.md`. If none found, ask the user which directory to use. Default suggestion: `.context/`.
 - Check for existing shim files: `.claude/CLAUDE.md`, `.github/copilot-instructions.md`, `AGENTS.md`
 - Read any existing versions of all files to understand current state
 - Identify the primary language, build system, and package structure

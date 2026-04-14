@@ -38,17 +38,17 @@ anansi/
 ├── parser/                      # (Phase 2 — not yet implemented)
 ├── normalizer/                  # (Phase 1 — not yet implemented)
 ├── robots/                      # (Phase 4 — not yet implemented)
-├── context/                     # AI agent context (rules, architecture, journal)
+├── .context/                    # AI agent context (rules, architecture, journal)
 │   ├── RULES.md
 │   ├── STRUCTURE.md             # ← you are here
 │   ├── ARCH.md
 │   └── journal/
 ├── .claude/
-│   ├── CLAUDE.md                # Claude Code shim → points to context/
+│   ├── CLAUDE.md                # Claude Code shim → points to .context/
 │   └── memory/                  # Claude persistent memory (feedback, project notes)
 ├── .github/
-│   └── copilot-instructions.md  # GitHub Copilot shim → points to context/
-├── AGENTS.md                    # Codex/agent shim → points to context/
+│   └── copilot-instructions.md  # GitHub Copilot shim → points to .context/
+├── AGENTS.md                    # Codex/agent shim → points to .context/
 ├── PLAN.md                      # Phased implementation plan
 ├── Dockerfile                   # Multi-stage: golang:1.26-alpine → alpine:3.23
 ├── Makefile                     # build, test, lint, run, clean, tidy, update, docker
