@@ -1,15 +1,9 @@
 package main
 
 import (
-	"context"
 	"fmt"
 	"os"
-	"os/signal"
 )
-
-func setupSignalContext() (context.Context, context.CancelFunc) {
-	return signal.NotifyContext(context.Background(), os.Interrupt)
-}
 
 func main() {
 
@@ -19,12 +13,13 @@ func main() {
 		os.Exit(1)
 	}
 
-	logger := setupLogger(cfg)
-	ctx, stop := setupSignalContext()
-	defer stop()
+	logger := SetupLogger(cfg)
+	ctx, cancel := SetupSignalContext()
+	defer cancel()
 
 	// TODO: wire crawler.New(cfg, logger) → crawler.Run(ctx) once crawler package exists
-	logger.Info("crawl starting",
+	logger.Info(
+		fmt.Sprintf("crawl starting for [%s]", cfg.Seed),
 		"seed", cfg.Seed,
 		"workers", cfg.Workers,
 		"rate", cfg.Rate,
