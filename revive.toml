@@ -1,0 +1,70 @@
+ignoreGeneratedHeader = false
+severity = "warning"
+confidence = 0.8
+errorCode = 0
+warningCode = 0
+
+enableAllRules = true
+
+# In code lint disabled needs a reason.
+# e.g.
+# Example.) //revive:disable:cyclomatic High complexity score but easy to understand
+[directive.specify-disable-reason]
+    severity = "warning"
+
+# Methods can have an opening blank line before the first line of the method. This allows an empty blank
+# line after the return but I discourage.
+[rule.empty-lines]
+    disabled = true
+
+[rule.bare-return]
+    disabled = true
+
+# This specifies what should be a line that's too long.
+# Visual References
+#
+#                                                                             # 80
+#                                                                                                 # 100
+#                                                                                                                     # 120
+[rule.line-length-limit]
+    severity = "warning"
+    arguments = [121]
+
+# We are using go.lintOnSave "file", this will flag all files in a package without a comment and that's not
+# correct in that scenario.
+[rule.package-comments]
+    disabled = true
+
+[rule.add-constant]
+    exclude = ["**/*_test.go"]
+    arguments = [{ maxLitCount = "3", allowStrs = "\"\",/", allowInts = "0,1,2", allowFloats = "0.0,0.,1.0,1.,2.0,2.", ignoreFuncs = "os\\.*,fmt\\.Println,make" }]
+
+[rule.cognitive-complexity]
+    exclude = ["**/*_test.go"]
+    arguments = [15]
+
+[rule.unhandled-error]
+    exclude = ["**/*_test.go"]
+
+[rule.unused-parameter]
+    exclude = ["**/*_test.go"]
+
+[rule.unchecked-type-assertion]
+    exclude = ["**/metrics.go"]
+
+[rule.filename-format]
+    arguments = ["^[_a-z][_a-z0-9.-]*.go$"]
+
+[rule.max-public-structs]
+    disabled = true
+
+[rule.exported]
+    arguments = [
+        "disableStutteringCheck",
+    ]
+
+[rule.var-naming]
+    arguments = [[], [], [{ skip-package-name-checks = true }]]
+
+[rule.function-length]
+    exclude = ["**/*_test.go"]

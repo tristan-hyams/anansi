@@ -28,43 +28,32 @@ cmd/anansi (main) → crawler → (frontier, parser, normalizer, robots)
 anansi/
 ├── cmd/
 │   └── anansi/
-│       └── main.go              # CLI entry: flag parsing, signal handling, slog setup
-├── crawler/
-│   ├── crawler.go               # Orchestrator: worker pool, WaitGroup, rate limiter
-│   └── crawler_test.go          # Integration tests with httptest servers
-├── frontier/
-│   ├── frontier.go              # Frontier interface + in-memory implementation
-│   └── frontier_test.go         #   (seen-set, buffered channel queue)
-├── parser/
-│   ├── parser.go                # HTML tokenizer → link extraction
-│   └── parser_test.go           #   Uses golang.org/x/net/html tokenizer
-├── normalizer/
-│   ├── normalizer.go            # URL canonicalization (fragments, scheme, trailing slash)
-│   └── normalizer_test.go       #   Pure functions, high test density
-├── robots/
-│   ├── robots.go                # robots.txt fetch + Disallow rule checking
-│   └── robots_test.go
-├── testdata/                    # Canned HTML fixtures for httptest servers
-│   ├── simple/
-│   ├── cycle/
-│   ├── external_links/
-│   ├── fragments/
-│   ├── non_html/
-│   ├── malformed/
-│   ├── relative_urls/
-│   └── schemes/
+│       ├── main.go              # CLI entry: signal handling, wiring
+│       ├── config.go            # AnansiConfig struct, ParseFlags, JSON serialization
+│       ├── config_test.go       # Config unit tests (package main_test)
+│       ├── consts.go            # Default constants (workers, rate, timeout)
+│       └── logger.go            # slog JSON handler setup
+├── crawler/                     # (Phase 5 — not yet implemented)
+├── frontier/                    # (Phase 3 — not yet implemented)
+├── parser/                      # (Phase 2 — not yet implemented)
+├── normalizer/                  # (Phase 1 — not yet implemented)
+├── robots/                      # (Phase 4 — not yet implemented)
 ├── context/                     # AI agent context (rules, architecture, journal)
 │   ├── RULES.md
 │   ├── STRUCTURE.md             # ← you are here
 │   ├── ARCH.md
 │   └── journal/
 ├── .claude/
-│   └── CLAUDE.md                # Claude Code shim → points to context/
+│   ├── CLAUDE.md                # Claude Code shim → points to context/
+│   └── memory/                  # Claude persistent memory (feedback, project notes)
 ├── .github/
 │   └── copilot-instructions.md  # GitHub Copilot shim → points to context/
 ├── AGENTS.md                    # Codex/agent shim → points to context/
-├── Dockerfile                   # Multi-stage: golang:1.24-alpine → alpine runtime
-├── Makefile                     # build, test, lint, run, docker, docker-run
+├── PLAN.md                      # Phased implementation plan
+├── Dockerfile                   # Multi-stage: golang:1.26-alpine → alpine:3.23
+├── Makefile                     # build, test, lint, run, clean, tidy, update, docker
+├── anansi.code-workspace        # VS Code workspace: F5 debug, revive lint-on-save
+├── revive.toml                  # Revive linter config (enableAllRules + overrides)
 ├── README.md
 ├── .gitignore
 ├── go.mod
@@ -77,7 +66,7 @@ anansi/
 
 | Package | Responsibility | Key Types |
 |---|---|---|
-| `cmd/anansi` | CLI entry point. Parses flags, wires dependencies, handles SIGINT/SIGTERM. | `main()` |
+| `cmd/anansi` | CLI entry point. Parses flags, wires dependencies, handles SIGINT/SIGTERM. | `main()`, `AnansiConfig`, `ParseFlags()` |
 | `crawler` | Orchestrates the crawl. Owns worker pool, rate limiter, WaitGroup. Consumes from frontier, delegates to parser. | `Crawler`, `Config`, `Result` |
 | `frontier` | URL queue + visited tracking. Interface-based for swappability. | `Frontier` (interface), `InMemory` (impl) |
 | `parser` | Extracts `<a href>` links from HTML using tokenizer. No URL filtering — returns raw hrefs. | `ExtractLinks(io.Reader, *url.URL) []string` |

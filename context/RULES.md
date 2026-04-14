@@ -7,9 +7,14 @@ Shared rules for all AI agents and tools. Referenced by `.claude/CLAUDE.md`, `AG
 ## Identity
 
 Anansi is a single-domain web crawler written in Go.
+
 Given a starting URL, it visits every reachable page on the same subdomain, printing each URL visited and links found.
+
 Built as a take-home challenge demonstrating concurrency design, software structure, testing strategy, and production awareness.
-One developer. Clean interfaces. Production-quality code.
+
+Clean interfaces.
+
+Production-quality code.
 
 ---
 
@@ -22,7 +27,7 @@ Apply judgment. These describe *why* — use them to reason about novel situatio
 - **Errors are values, not panics.** Return errors up the stack. `panic` only for programmer bugs (nil dereference in init). Wrap errors with `fmt.Errorf("context: %w", err)` for stack context.
 - **No global state.** Pass dependencies via struct fields or function parameters. No `init()` side effects beyond flag registration.
 - **Pure functions are testable functions.** URL normalization, domain matching, link extraction — keep these as pure functions with table-driven tests.
-- **Log structure, not strings.** Use `log/slog` with key-value pairs. No `fmt.Println` for operational output.
+- **Log structure, not just strings.** Use `log/slog` with key-value pairs. No `fmt.Println` for operational output.
 - **Respect the network.** Rate limit all outbound HTTP. Honour `robots.txt`. Check `Content-Type` before parsing. Handle 429 with backoff.
 
 ---
@@ -31,13 +36,15 @@ Apply judgment. These describe *why* — use them to reason about novel situatio
 
 | Convention | Rule |
 |---|---|
-| Go version | 1.24+ (latest stable) |
+| Go version | 1.26+ (latest stable) |
 | Module path | `github.com/tristan-hyams/anansi` |
 | Package layout | Top-level packages (`crawler/`, `frontier/`, `parser/`, `normalizer/`, `robots/`). No `internal/`. |
-| Testing | `go test -race -cover ./...` — always race detector enabled |
-| Linting | `golangci-lint run` |
+| Testing | `go test -cover ./...` — race detector enabled in CI/Docker where CGO is available |
+| Linting | `revive -config revive.toml ./...` |
 | Build | `CGO_ENABLED=0 go build -o bin/anansi ./cmd/anansi` |
 | Error wrapping | `fmt.Errorf("operation: %w", err)` — always wrap with context |
+| Exit control | Only `main()` may call `os.Exit` or `log.Fatal`. All other functions return errors to the caller. |
+| Error returns | Return `(nil, err)` with pointer receivers, not zero-value structs. Prevents callers from using an uninitialised config. |
 | Context propagation | Pass `context.Context` as first parameter. Respect cancellation. |
 | Naming | Exported types: `PascalCase`. Unexported: `camelCase`. Acronyms: `URL`, `HTTP`, `HTML` (all caps). |
 
@@ -60,7 +67,7 @@ Apply judgment. These describe *why* — use them to reason about novel situatio
 
 - **Unit tests per package.** Table-driven tests for `normalizer`, `parser`, `robots`.
 - **Integration tests with `httptest.NewServer`.** Canned HTML in `testdata/` directories.
-- **Race detector always on.** `-race` flag in `make test` and CI.
+- **Race detector in CI.** `-race` requires CGO; enabled in CI/Docker, not in local Windows builds.
 - **Test categories in `testdata/`:**
   - `simple/` — happy path, 3 pages linking to each other
   - `cycle/` — A → B → A cycle detection
@@ -83,11 +90,15 @@ make build
 make run
 make run URL=https://example.com/
 
-# Test (race detector + coverage)
+# Test (coverage)
 make test
 
-# Lint
+# Lint (revive)
 make lint
+
+# Dependencies
+make tidy           # go mod tidy
+make update         # go get -u ./... + tidy
 
 # Docker (no Go install required)
 make docker-run

@@ -4,10 +4,18 @@ A single-domain web crawler written in Go. Given a starting URL, Anansi visits e
 
 Named after [Anansi](https://en.wikipedia.org/wiki/Anansi), the West African spider of folklore — a weaver of webs and stories.
 
+## Getting Started
+
+Open the project using `anansi.code-workspace` for the best experience — it configures the debugger (F5), revive linter, and lint-on-save out of the box:
+
+```
+File → Open Workspace from File → anansi.code-workspace
+```
+
 ## Quick Start
 
 ```bash
-# Native (requires Go 1.24+)
+# Native (requires Go 1.26+)
 make run
 
 # Docker (no Go required)
@@ -27,16 +35,21 @@ Flags:
   -workers int      Number of concurrent workers (default 5)
   -rate float       Max requests per second (default 5)
   -max-depth int    Maximum crawl depth, 0 for unlimited (default 0)
-  -timeout duration HTTP request timeout (default 10s)
+  -timeout duration HTTP request timeout (default 30s)
+  -log-level string Log level: debug, info, warn, error (default "info")
 ```
 
 ## Development
 
 ```bash
-make build       # Build binary to bin/anansi
-make test        # Run tests with race detector + coverage
-make lint        # Run golangci-lint
+make build       # Build binary to bin\anansi.exe
+make test        # Run tests with coverage
+make lint        # Run revive linter
+make tidy        # Run go mod tidy
+make update      # Update all deps + tidy
 make clean       # Remove build artifacts
+make run         # Build and run against default URL
+make docker-run  # Build Docker image and run
 ```
 
 ## Architecture

@@ -33,3 +33,5 @@ Thumbs.db
 
 # Build
 dist/
+__debug
+.claude/settings.local.json

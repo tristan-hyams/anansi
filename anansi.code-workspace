@@ -1,0 +1,32 @@
+{
+  "folders": [
+    {
+      "path": "."
+    }
+  ],
+  "settings": {
+    "go.lintTool": "revive",
+    "go.lintFlags": ["-config=${workspaceFolder}/revive.toml"],
+    "go.lintOnSave": "workspace",
+    "[go]": {
+      "editor.formatOnSave": true,
+      "editor.codeActionsOnSave": {
+        "source.organizeImports": "explicit"
+      }
+    }
+  },
+  "launch": {
+    "version": "0.2.0",
+    "configurations": [
+      {
+        "name": "Debug Anansi",
+        "type": "go",
+        "request": "launch",
+        "mode": "debug",
+        "program": "${workspaceFolder}/cmd/anansi",
+        "args": ["https://crawlme.monzo.com/"],
+        "console": "integratedTerminal"
+      }
+    ]
+  }
+}

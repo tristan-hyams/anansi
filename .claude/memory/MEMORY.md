@@ -1,0 +1,5 @@
+- [Dockerfile versions](feedback_dockerfile_versions.md) — User manages Dockerfile base image versions manually, don't revert
+- [No os.Exit in helpers](feedback_no_exit_in_helpers.md) — Helpers return errors, only main() exits
+- [Pointer error returns](feedback_pointer_error_returns.md) — Return nil, err with pointers — never zero-value structs
+- [Constants in consts.go](feedback_consts_own_file.md) — Constants go in a dedicated consts.go, not inline
+- [Use make targets](feedback_use_make_targets.md) — Always use make build/test/lint, not raw commands
