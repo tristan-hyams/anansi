@@ -37,9 +37,9 @@ func ExtractLinks(ctx context.Context, r io.Reader) ([]string, error) {
 			return links, err
 		}
 
-		tt := tokenizer.Next()
+		tokenType := tokenizer.Next()
 
-		switch tt {
+		switch tokenType {
 		case html.ErrorToken:
 			if tokenizer.Err() == io.EOF {
 				return links, nil
