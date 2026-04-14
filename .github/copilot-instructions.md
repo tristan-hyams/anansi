@@ -11,3 +11,7 @@ Package architecture, dependencies, and directory layout:
 
 Architecture decisions, trade-offs, and rationale:
 **[.context/ARCH.md](../.context/ARCH.md)**
+
+## Session Continuity
+
+Journal entries live in **[.context/journal/](../.context/journal/)**. At the start of each session, read the latest journal entry to pick up where work was left off.
