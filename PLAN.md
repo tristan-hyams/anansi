@@ -5,7 +5,7 @@ Each phase produces tested, working code before the next begins.
 
 ---
 
-## Phase 0 — Project Init
+## Phase 0 - Project Init
 
 - [ ] `go mod init github.com/tristan-hyams/anansi`
 - [ ] Create `Makefile` (build, test, lint, run, clean, docker, docker-run)
@@ -16,7 +16,7 @@ Each phase produces tested, working code before the next begins.
 
 ---
 
-## Phase 1 — normalizer
+## Phase 1 - normalizer
 
 URL canonicalization. Pure functions, zero dependencies, highest test density.
 
@@ -27,8 +27,8 @@ URL canonicalization. Pure functions, zero dependencies, highest test density.
   - Resolve relative URLs against base (`net/url.ResolveReference`)
   - Strip default ports (`:80` for HTTP, `:443` for HTTPS)
   - Consistent trailing slash handling
-  - `IsSameDomain(seed, candidate *url.URL) bool` — strict hostname match
-  - `IsFollowableScheme(u *url.URL) bool` — only `http` and `https`
+  - `IsSameDomain(seed, candidate *url.URL) bool` - strict hostname match
+  - `IsFollowableScheme(u *url.URL) bool` - only `http` and `https`
 - [ ] `normalizer/normalizer_test.go`
   - Table-driven tests: 15+ cases covering every transform
   - Edge cases: empty href, `#`-only, `javascript:void(0)`, `mailto:`, protocol-relative `//cdn.example.com`, query params, encoded characters
@@ -37,14 +37,14 @@ URL canonicalization. Pure functions, zero dependencies, highest test density.
 
 ---
 
-## Phase 2 — parser
+## Phase 2 - parser
 
 HTML link extraction. Depends on nothing internal. Uses `golang.org/x/net/html` tokenizer.
 
 - [ ] `parser/parser.go`
   - `ExtractLinks(r io.Reader) ([]string, error)`
   - Tokenizer loop: scan for `<a>` start tags, extract `href` attribute
-  - Return raw href strings — no filtering, no normalization (that's the caller's job)
+  - Return raw href strings - no filtering, no normalization (that's the caller's job)
 - [ ] `parser/parser_test.go`
   - Well-formed HTML with multiple links
   - Malformed / unclosed tags (tokenizer should handle gracefully)
@@ -58,7 +58,7 @@ HTML link extraction. Depends on nothing internal. Uses `golang.org/x/net/html` 
 
 ---
 
-## Phase 3 — frontier
+## Phase 3 - frontier
 
 URL queue + visited tracking. Interface-based for swappability.
 
@@ -87,7 +87,7 @@ URL queue + visited tracking. Interface-based for swappability.
 
 ---
 
-## Phase 4 — robots
+## Phase 4 - robots
 
 robots.txt compliance. Fetches and parses rules.
 
@@ -104,11 +104,11 @@ robots.txt compliance. Fetches and parses rules.
   - Multiple User-agent blocks (only respect `*`)
   - `httptest.NewServer` for all tests
 
-**Exit criteria:** `make test` passes. robots.txt fetch failures don't crash the crawler — they degrade to allow-all with a warning.
+**Exit criteria:** `make test` passes. robots.txt fetch failures don't crash the crawler - they degrade to allow-all with a warning.
 
 ---
 
-## Phase 5 — crawler
+## Phase 5 - crawler
 
 Orchestrator. Wires everything together. This is the core.
 
@@ -144,9 +144,9 @@ Orchestrator. Wires everything together. This is the core.
 
 ---
 
-## Phase 6 — cmd/anansi
+## Phase 6 - cmd/anansi
 
-CLI entry point. Thin — all logic lives in packages.
+CLI entry point. Thin - all logic lives in packages.
 
 - [ ] `cmd/anansi/main.go`
   - Flag parsing: `-workers`, `-rate`, `-max-depth`, `-timeout`
@@ -173,7 +173,7 @@ CLI entry point. Thin — all logic lives in packages.
 
 ---
 
-## Phase 7 — Polish
+## Phase 7 - Polish
 
 - [ ] Run `golangci-lint run`, fix all findings
 - [ ] Review test coverage: `go test -coverprofile=coverage.out ./... && go tool cover -html=coverage.out`
@@ -203,7 +203,7 @@ Phase 0: init
                     └── Phase 7: polish
 ```
 
-Phases 1-4 are independent — can be built in any order or in parallel. Phase 5 integrates them. Phase 6 wraps Phase 5. Phase 7 is final review.
+Phases 1-4 are independent - can be built in any order or in parallel. Phase 5 integrates them. Phase 6 wraps Phase 5. Phase 7 is final review.
 
 ---
 

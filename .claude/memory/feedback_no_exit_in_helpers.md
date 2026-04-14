@@ -1,6 +1,6 @@
 ---
 name: No os.Exit or log.Fatal in helpers
-description: Helper/factory functions must return errors, never call os.Exit or log.Fatal — only main() decides exit behavior
+description: Helper/factory functions must return errors, never call os.Exit or log.Fatal - only main() decides exit behavior
 type: feedback
 originSessionId: 3f4c6514-8089-464c-8811-b878edd55863
 ---

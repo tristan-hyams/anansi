@@ -1,6 +1,6 @@
 ---
 name: Dockerfile version policy
-description: User manually updates Dockerfile base images to latest versions — don't revert or downgrade
+description: User manually updates Dockerfile base images to latest versions - don't revert or downgrade
 type: feedback
 originSessionId: 3f4c6514-8089-464c-8811-b878edd55863
 ---

@@ -8,11 +8,11 @@ user-invocable: true
 
 Bootstrap three identical ML context shims and ensure the central context docs exist.
 
-The shim files (`.claude/CLAUDE.md`, `.github/copilot-instructions.md`, `AGENTS.md`) are **byte-for-byte identical in content** except for the file header and relative paths. They are dumb anchor points — redirecting any AI tool (Claude, Copilot, Codex) to the same partitioned context files. **No content divergence between shims.** Identity, philosophy, commands, workflow conventions — all live in the shared context files, never in a shim.
+The shim files (`.claude/CLAUDE.md`, `.github/copilot-instructions.md`, `AGENTS.md`) are **byte-for-byte identical in content** except for the file header and relative paths. They are dumb anchor points - redirecting any AI tool (Claude, Copilot, Codex) to the same partitioned context files. **No content divergence between shims.** Identity, philosophy, commands, workflow conventions - all live in the shared context files, never in a shim.
 
 This pattern maximises context window efficacy by letting agents load only the partitions they need, and streamlines ML onboarding to any repo regardless of which tool the engineer uses.
 
-## Step 1 — Discover repo layout
+## Step 1 - Discover repo layout
 
 - Determine the repo root (look for `.git/`, `go.mod`, `package.json`, `*.sln`, etc.)
 - **Detect context directory**: check for existing `.context/`, `context/`, `docs/`, or `doc/` directories containing `RULES.md` or `STRUCTURE.md`. If none found, ask the user which directory to use. Default suggestion: `.context/`.
@@ -54,25 +54,25 @@ Verify `.gitignore` exists and includes relevant entries. Suggest additions if m
 - IDE directories (`.idea/`, `.vscode/`)
 - OS files (`.DS_Store`, `Thumbs.db`)
 
-## Step 2 — Bootstrap {context_dir}/RULES.md (if it doesn't exist)
+## Step 2 - Bootstrap {context_dir}/RULES.md (if it doesn't exist)
 
 `{context_dir}` is the directory detected or chosen in Step 1.
 
 Create `{context_dir}/RULES.md` by analyzing the codebase. This is the **single source of truth** for how to write code in this repo. Include:
 
-- **Identity** — what this project is, one-line description, key technology choices
-- **Design principles** — the *why* behind patterns, so agents can reason about novel situations
-- **Style & formatting** — linters, formatters, naming conventions observed in the code
-- **Language-idiomatic patterns** — error handling, dependency injection, concurrency, etc.
-- **Rejected patterns** — table of patterns explicitly not used and why
-- **Commands** — build, test, lint, run, deploy. Copy-paste runnable.
-- **Testing conventions** — test runner, patterns, env/config approach
-- **Observability** — logging, tracing, metrics conventions
-- **References** — pointers to discovered config files (linters, CI, Docker, API specs). Don't duplicate their content, just note they exist and their purpose.
+- **Identity** - what this project is, one-line description, key technology choices
+- **Design principles** - the *why* behind patterns, so agents can reason about novel situations
+- **Style & formatting** - linters, formatters, naming conventions observed in the code
+- **Language-idiomatic patterns** - error handling, dependency injection, concurrency, etc.
+- **Rejected patterns** - table of patterns explicitly not used and why
+- **Commands** - build, test, lint, run, deploy. Copy-paste runnable.
+- **Testing conventions** - test runner, patterns, env/config approach
+- **Observability** - logging, tracing, metrics conventions
+- **References** - pointers to discovered config files (linters, CI, Docker, API specs). Don't duplicate their content, just note they exist and their purpose.
 
 If it already exists, note it for the review step.
 
-## Step 3 — Bootstrap {context_dir}/STRUCTURE.md (if it doesn't exist)
+## Step 3 - Bootstrap {context_dir}/STRUCTURE.md (if it doesn't exist)
 
 Create `{context_dir}/STRUCTURE.md` by analyzing the codebase. Include:
 
@@ -84,7 +84,7 @@ Create `{context_dir}/STRUCTURE.md` by analyzing the codebase. Include:
 
 If it already exists, note it for the review step.
 
-## Step 4 — Evaluate graduated context files
+## Step 4 - Evaluate graduated context files
 
 Beyond RULES.md and STRUCTURE.md, check if the repo warrants additional focused context docs. Create them only if there is enough substance; otherwise fold the content into RULES.md.
 
@@ -97,7 +97,7 @@ Beyond RULES.md and STRUCTURE.md, check if the repo warrants additional focused 
 
 Only create additional docs if they would meaningfully reduce RULES.md size. Don't split for the sake of splitting.
 
-## Step 5 — Bootstrap journal directory
+## Step 5 - Bootstrap journal directory
 
 Create `{context_dir}/journal/` if it doesn't exist. This is where session-to-session work history and decision rationale is recorded.
 
@@ -111,7 +111,7 @@ Add a **Workflow** section to RULES.md (if not already present) documenting jour
 - **Content:** Context, decisions made, work done, next steps.
 ```
 
-## Step 6 — Create the three identical thin shim files
+## Step 6 - Create the three identical thin shim files
 
 All three shims have **identical content structure**. The only differences are:
 - The `# Header` line (tool-specific name)
@@ -155,7 +155,7 @@ Replace `{YYYY-MM-DD}` with today's date. Replace `{context_dir}` with the actua
 
 After writing all shim files, verify that every relative path in each shim resolves to an actual file. Report any broken links.
 
-## Step 7 — Review for accuracy
+## Step 7 - Review for accuracy
 
 Compare all context files against the actual codebase:
 

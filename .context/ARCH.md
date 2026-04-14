@@ -28,7 +28,7 @@ Built as a take-home challenge demonstrating: concurrency design, software struc
                   (token bucket)
 ```
 
-- **Buffered channel** acts as the work queue. Buffer size configurable (default: 1000). Provides natural backpressure — workers discovering new URLs block on send if the buffer is full.
+- **Buffered channel** acts as the work queue. Buffer size configurable (default: 1000). Provides natural backpressure - workers discovering new URLs block on send if the buffer is full.
 - **`sync.WaitGroup`** tracks in-flight work. `Add(1)` on enqueue, `Done()` on completion. A monitor goroutine calls `wg.Wait()` then closes the channel to signal natural completion.
 - **`golang.org/x/time/rate` token bucket** enforces global rate limiting (default: 5 req/s). All workers draw a token before making HTTP requests.
 - **`signal.NotifyContext`** for graceful shutdown on SIGINT/SIGTERM. Cancels context, workers drain, logger flushes.
@@ -90,7 +90,7 @@ Check `Content-Type` response header before parsing. Only parse `text/html` (wit
 
 Fetched once at crawl start from `{scheme}://{host}/robots.txt`. Parsed for `User-agent: *` Disallow rules. URLs checked against rules before enqueuing.
 
-Uses `github.com/temoto/robotstxt` for parsing — robots.txt parsing is not a crawler framework.
+Uses `github.com/temoto/robotstxt` for parsing - robots.txt parsing is not a crawler framework.
 
 Optional: `Crawl-delay` directive fed into rate limiter if present.
 
