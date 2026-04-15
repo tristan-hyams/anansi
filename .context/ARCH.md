@@ -28,10 +28,11 @@ Built as a take-home challenge demonstrating: concurrency design, software struc
                   (token bucket)
 ```
 
-- **Buffered channel** acts as the work queue. Buffer size configurable (default: 1000). Provides natural backpressure - workers discovering new URLs block on send if the buffer is full.
-- **`sync.WaitGroup`** tracks in-flight work. `Add(1)` on enqueue, `Done()` on completion. A monitor goroutine calls `wg.Wait()` then closes the channel to signal natural completion.
+- **Buffered channel** acts as the work queue. Buffer size defaults to 100,000 — the visited set (not the channel) is the real bound on growth. Dedup is built into Enqueue via `sync.Map`.
+- **`FrontierURL`** wraps each URL with crawl metadata: depth, status (pending/visited/error), and error state. The crawler sets depth at enqueue time.
+- **`sync.WaitGroup`** lives in the crawler (not the frontier) to track in-flight workers. The frontier is a pure queue + dedup layer.
 - **`golang.org/x/time/rate` token bucket** enforces global rate limiting (default: 5 req/s). All workers draw a token before making HTTP requests.
-- **`signal.NotifyContext`** for graceful shutdown on SIGINT/SIGTERM. Cancels context, workers drain, logger flushes.
+- **`signal.NotifyContext`** for graceful shutdown on SIGINT/SIGTERM. Cancels context, workers drain, frontier select cases unblock via ctx.Done().
 
 ### Production note
 

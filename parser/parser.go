@@ -54,7 +54,7 @@ func ExtractLinks(ctx context.Context, r io.Reader) ([]string, error) {
 				continue
 			}
 
-			if href, ok := getHrefValue(tokenizer); ok {
+			if href, ok := getAHrefValue(tokenizer); ok {
 				links = append(links, href)
 			}
 
@@ -72,8 +72,8 @@ func isAHrefToken(tokenizer *html.Tokenizer) bool {
 // bytes.Equal is used for efficient byte slice comparison without unnecessary string conversions.
 var hrefKey = []byte("href")
 
-// getHrefValue iterates attributes of the current token looking for href.
-func getHrefValue(tokenizer *html.Tokenizer) (string, bool) {
+// getAHrefValue iterates attributes of the current token looking for href.
+func getAHrefValue(tokenizer *html.Tokenizer) (string, bool) {
 	for {
 		key, val, more := tokenizer.TagAttr()
 		if bytes.Equal(key, hrefKey) {
