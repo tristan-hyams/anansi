@@ -17,7 +17,7 @@ Thin wiring layer — all logic lives in packages. This is the only place that c
 | File | Purpose |
 |------|---------|
 | `main.go` | Entry point — wires config, logger, signal context, crawler |
-| `config.go` | `AnansiConfig` struct with JSON serialization, `ParseFlags`, `SeedURL` |
+| `config.go` | `AnansiConfig` struct with JSON serialization, `ParseFlags`, `OriginURL` |
 | `consts.go` | Default flag values (workers, rate, timeout, log level) |
 | `logger.go` | `SetupLogger` — slog JSON handler to stderr |
 | `startup.go` | `SetupSignalContext` — signal notification wiring |

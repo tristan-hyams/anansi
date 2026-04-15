@@ -41,10 +41,10 @@ func Normalize(base *url.URL, raw string) (*url.URL, error) {
 	return resolved, nil
 }
 
-// IsSameHost returns true if candidate has the exact same hostname as seed.
-// Strict match - crawlme.monzo.com does not match monzo.com or community.monzo.com.
-func IsSameHost(seed, candidate *url.URL) bool {
-	return stripDefaultPort(seed.Scheme, strings.ToLower(seed.Host)) ==
+// IsSameHost returns true if candidate has the exact same hostname as origin.
+// Strict match — crawlme.monzo.com does not match monzo.com or community.monzo.com.
+func IsSameHost(origin, candidate *url.URL) bool {
+	return stripDefaultPort(origin.Scheme, strings.ToLower(origin.Host)) ==
 		stripDefaultPort(candidate.Scheme, strings.ToLower(candidate.Host))
 }
 

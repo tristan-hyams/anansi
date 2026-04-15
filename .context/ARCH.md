@@ -74,7 +74,7 @@ Dequeue URL from frontier
        │
        ├─ Filter scheme ──► only http/https (reject mailto:, javascript:, tel:, etc.)
        │
-       ├─ Filter domain ──► strict hostname match against seed URL
+       ├─ Filter domain ──► strict hostname match against origin URL
        │
        ├─ Check robots.txt ──► reject if Disallowed
        │

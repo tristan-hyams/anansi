@@ -17,7 +17,7 @@ type AnansiConfig struct {
 	Rate     float64       `json:"rate"`
 	MaxDepth int           `json:"max_depth"`
 	Timeout  time.Duration `json:"timeout"`
-	Seed     string        `json:"seed"`
+	Origin     string        `json:"origin"`
 	LogLevel string        `json:"log_level"`
 }
 
@@ -36,15 +36,15 @@ func LoadConfigFromFile(path string) (*AnansiConfig, error) {
 	return &cfg, nil
 }
 
-// SeedURL parses and validates the Seed field as a *url.URL.
-func (c *AnansiConfig) SeedURL() (*url.URL, error) {
-	u, err := url.Parse(c.Seed)
+// OriginURL parses and validates the Origin field as a *url.URL.
+func (c *AnansiConfig) OriginURL() (*url.URL, error) {
+	u, err := url.Parse(c.Origin)
 	if err != nil {
-		return nil, fmt.Errorf("parsing seed URL: %w", err)
+		return nil, fmt.Errorf("parsing origin URL: %w", err)
 	}
 
 	if u.Scheme == "" || u.Host == "" {
-		return nil, fmt.Errorf("seed URL %q missing scheme or host", c.Seed)
+		return nil, fmt.Errorf("origin URL %q missing scheme or host", c.Origin)
 	}
 	return u, nil
 }

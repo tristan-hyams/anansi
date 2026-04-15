@@ -19,8 +19,8 @@ func main() {
 
 	// TODO: wire crawler.New(cfg, logger) → crawler.Run(ctx) once crawler package exists
 	logger.Info(
-		fmt.Sprintf("crawl starting for [%s]", cfg.Seed),
-		"seed", cfg.Seed,
+		fmt.Sprintf("crawl starting for [%s]", cfg.Origin),
+		"origin", cfg.Origin,
 		"workers", cfg.Workers,
 		"rate", cfg.Rate,
 		"max_depth", cfg.MaxDepth,

@@ -90,7 +90,7 @@ func TestIsSameHost(t *testing.T) {
 
 	tests := []struct {
 		name      string
-		seed      string
+		origin    string
 		candidate string
 		want      bool
 	}{
@@ -110,9 +110,9 @@ func TestIsSameHost(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 
-			seed := mustParse(t, tt.seed)
+			origin := mustParse(t, tt.origin)
 			candidate := mustParse(t, tt.candidate)
-			assert.Equal(t, tt.want, normalizer.IsSameHost(seed, candidate))
+			assert.Equal(t, tt.want, normalizer.IsSameHost(origin, candidate))
 		})
 	}
 }

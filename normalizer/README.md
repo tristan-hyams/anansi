@@ -7,7 +7,7 @@ URL canonicalization for the Anansi web crawler. Pure functions, zero side effec
 | Function | Purpose |
 |----------|---------|
 | `Normalize(base, raw)` | Resolves relative URLs, strips fragments, lowercases scheme/host, strips default ports |
-| `IsSameHost(seed, candidate)` | Strict hostname match — `crawlme.monzo.com` does not match `monzo.com` |
+| `IsSameHost(origin, candidate)` | Strict hostname match — `crawlme.monzo.com` does not match `monzo.com` |
 | `IsFollowableScheme(u)` | Returns true for `http` and `https` only |
 
 ## Design Notes

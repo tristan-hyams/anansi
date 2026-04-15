@@ -40,11 +40,11 @@ func ParseFlags() (*AnansiConfig, error) {
 		Rate:     *rate,
 		MaxDepth: *maxDepth,
 		Timeout:  *timeout,
-		Seed:     flag.Arg(0),
+		Origin:   flag.Arg(0),
 		LogLevel: *logLevel,
 	}
 
-	if _, err := cfg.SeedURL(); err != nil {
+	if _, err := cfg.OriginURL(); err != nil {
 		return nil, err
 	}
 

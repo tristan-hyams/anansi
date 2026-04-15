@@ -14,12 +14,12 @@ import (
 	cli "github.com/tristan-hyams/anansi/cmd/anansi"
 )
 
-func TestSeedURL_Valid(t *testing.T) {
+func TestOriginURL_Valid(t *testing.T) {
 	t.Parallel()
 
 	tests := []struct {
 		name   string
-		seed   string
+		origin string
 		wantH  string
 		wantS  string
 	}{
@@ -31,8 +31,8 @@ func TestSeedURL_Valid(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
-			cfg := &cli.AnansiConfig{Seed: tt.seed}
-			u, err := cfg.SeedURL()
+			cfg := &cli.AnansiConfig{Origin: tt.origin}
+			u, err := cfg.OriginURL()
 			require.NoError(t, err)
 			assert.Equal(t, tt.wantH, u.Host)
 			assert.Equal(t, tt.wantS, u.Scheme)
@@ -40,12 +40,12 @@ func TestSeedURL_Valid(t *testing.T) {
 	}
 }
 
-func TestSeedURL_Invalid(t *testing.T) {
+func TestOriginURL_Invalid(t *testing.T) {
 	t.Parallel()
 
 	tests := []struct {
-		name string
-		seed string
+		name   string
+		origin string
 	}{
 		{"empty", ""},
 		{"no scheme", "crawlme.monzo.com"},
@@ -56,8 +56,8 @@ func TestSeedURL_Invalid(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
-			cfg := &cli.AnansiConfig{Seed: tt.seed}
-			u, err := cfg.SeedURL()
+			cfg := &cli.AnansiConfig{Origin: tt.origin}
+			u, err := cfg.OriginURL()
 			assert.Error(t, err)
 			assert.Nil(t, u)
 		})
@@ -101,7 +101,7 @@ func TestSaveAndLoadConfig(t *testing.T) {
 		Rate:     2.5,
 		MaxDepth: 3,
 		Timeout:  15 * time.Second,
-		Seed:     "https://example.com/",
+		Origin:   "https://example.com/",
 		LogLevel: "debug",
 	}
 
@@ -115,7 +115,7 @@ func TestSaveAndLoadConfig(t *testing.T) {
 	assert.Equal(t, original.Rate, loaded.Rate)
 	assert.Equal(t, original.MaxDepth, loaded.MaxDepth)
 	assert.Equal(t, original.Timeout, loaded.Timeout)
-	assert.Equal(t, original.Seed, loaded.Seed)
+	assert.Equal(t, original.Origin, loaded.Origin)
 	assert.Equal(t, original.LogLevel, loaded.LogLevel)
 }
 
@@ -144,7 +144,7 @@ func TestSaveToFile_WritesValidJSON(t *testing.T) {
 	cfg := &cli.AnansiConfig{
 		Workers:  5,
 		Rate:     5,
-		Seed:     "https://example.com/",
+		Origin:   "https://example.com/",
 		LogLevel: "info",
 	}
 
