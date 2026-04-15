@@ -17,7 +17,7 @@ type AnansiConfig struct {
 	Rate     float64       `json:"rate"`
 	MaxDepth int           `json:"max_depth"`
 	Timeout  time.Duration `json:"timeout"`
-	Origin     string        `json:"origin"`
+	Origin   string        `json:"origin"`
 	LogLevel string        `json:"log_level"`
 }
 

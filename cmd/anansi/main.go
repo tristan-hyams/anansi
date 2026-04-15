@@ -3,21 +3,36 @@ package main
 import (
 	"fmt"
 	"os"
+
+	"github.com/tristan-hyams/anansi/weaver"
 )
 
 func main() {
 
 	cfg, err := ParseFlags()
 	if err != nil {
-		_, _ = fmt.Fprintf(os.Stderr, "anansi: %v\n", err)
-		os.Exit(1)
+		_, _ = fmt.Fprintf(os.Stderr, errFmt, err)
+		os.Exit(exitCodeError)
 	}
 
 	logger := SetupLogger(cfg)
 	ctx, cancel := SetupSignalContext()
 	defer cancel()
 
-	// TODO: wire crawler.New(cfg, logger) → crawler.Run(ctx) once crawler package exists
+	origin, err := cfg.OriginURL()
+	if err != nil {
+		_, _ = fmt.Fprintf(os.Stderr, errFmt, err)
+		os.Exit(exitCodeError)
+	}
+
+	weaverCfg := &weaver.WeaverConfig{
+		Workers:   cfg.Workers,
+		Rate:      cfg.Rate,
+		MaxDepth:  cfg.MaxDepth,
+		Timeout:   cfg.Timeout,
+		UserAgent: "Anansi",
+	}
+
 	logger.Info(
 		fmt.Sprintf("crawl starting for [%s]", cfg.Origin),
 		"origin", cfg.Origin,
@@ -25,10 +40,23 @@ func main() {
 		"rate", cfg.Rate,
 		"max_depth", cfg.MaxDepth,
 		"timeout", cfg.Timeout,
-		"log_level", cfg.LogLevel,
 	)
 
-	_ = ctx
-	_, _ = fmt.Fprintln(os.Stderr, "anansi: crawler not yet implemented")
-	os.Exit(1)
+	wv, err := weaver.NewWeaver(ctx, weaverCfg, origin, logger)
+	if err != nil {
+		_, _ = fmt.Fprintf(os.Stderr, errFmt, err)
+		os.Exit(exitCodeError)
+	}
+
+	web, err := wv.Weave(ctx)
+	if err != nil {
+		_, _ = fmt.Fprintf(os.Stderr, errFmt, err)
+		os.Exit(exitCodeError)
+	}
+
+	_, _ = fmt.Print(web.String())
+
+	if ctx.Err() != nil {
+		os.Exit(exitCodeSIGINT)
+	}
 }

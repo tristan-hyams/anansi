@@ -24,15 +24,16 @@ import (
 
 // Weaver orchestrates the crawl. Created via NewWeaver(), executed via Weave().
 type Weaver struct {
-	cfg     *WeaverConfig
-	origin  *url.URL
-	limiter *rate.Limiter
-	front   frontier.Frontier
-	rules   *robots.Rules
-	logger  *slog.Logger
-	active  atomic.Int32
-	mu      sync.Mutex
-	pages   []PageResult
+	cfg      *WeaverConfig
+	origin   *url.URL
+	limiter  *rate.Limiter
+	front    frontier.Frontier
+	rules    *robots.Rules
+	logger   *slog.Logger
+	crawlers []*Crawler
+	active   atomic.Int32
+	mu       sync.Mutex
+	pages    []PageResult
 }
 
 // NewWeaver creates a Weaver. Fetches robots.txt during construction.
@@ -43,14 +44,10 @@ func NewWeaver(ctx context.Context, cfg *WeaverConfig, origin *url.URL, logger *
 		return nil, fmt.Errorf("invalid config: %w", err)
 	}
 
-	// Client for robots.txt fetch during setup.
-	// webutil.Transport() is a singleton — shared across all clients.
-	setupClient := webutil.NewClient(cfg.Timeout)
-
 	// Fetch robots.txt — 404/403/network errors degrade to allow-all inside
 	// Fetch itself. If Fetch returns an error, it's a real failure (5xx,
 	// context cancellation) and we should not proceed.
-	rules, err := robots.Fetch(ctx, setupClient, origin, logger)
+	rules, err := robots.Fetch(ctx, origin, logger)
 	if err != nil {
 		return nil, fmt.Errorf("robots.txt: %w", err)
 	}
@@ -65,14 +62,26 @@ func NewWeaver(ctx context.Context, cfg *WeaverConfig, origin *url.URL, logger *
 		return nil, fmt.Errorf("enqueueing origin URL: %w", err)
 	}
 
-	return &Weaver{
+	wv := &Weaver{
 		cfg:     cfg,
 		origin:  origin,
 		limiter: rate.NewLimiter(crawlRate, 1),
 		front:   front,
 		rules:   rules,
 		logger:  logger,
-	}, nil
+	}
+
+	// Pre-create crawlers — each gets its own HTTP client backed by
+	// the singleton transport. Created once, reused across Weave calls.
+	wv.crawlers = make([]*Crawler, cfg.Workers)
+	for i := range cfg.Workers {
+		wv.crawlers[i] = &Crawler{
+			weaver: wv,
+			client: webutil.NewClient(cfg.Timeout),
+		}
+	}
+
+	return wv, nil
 }
 
 // Weave starts the crawl and blocks until completion or context cancellation.
@@ -84,12 +93,8 @@ func (w *Weaver) Weave(ctx context.Context) (*Web, error) {
 	defer crawlCancel()
 
 	var wg sync.WaitGroup
-	for range w.cfg.Workers {
+	for _, c := range w.crawlers {
 		wg.Go(func() {
-			c := &Crawler{
-				weaver: w,
-				client: webutil.NewClient(w.cfg.Timeout),
-			}
 			c.crawl(crawlCtx)
 		})
 	}
@@ -103,14 +108,18 @@ func (w *Weaver) Weave(ctx context.Context) (*Web, error) {
 	return w.buildResult(start), nil
 }
 
-// monitorCompletion polls until all crawlers are idle.
+// monitorCompletion polls until the crawl is naturally complete.
+// Checks both conditions: no crawlers actively processing AND the queue
+// is empty. This avoids a race where a crawler is between Dequeue and
+// active.Add(1) — the queue would be empty but active == 0 briefly.
+// By requiring both, we only cancel when truly done.
 func (w *Weaver) monitorCompletion(ctx context.Context, cancel context.CancelFunc) {
 	for {
 		select {
 		case <-ctx.Done():
 			return
 		case <-time.After(50 * time.Millisecond):
-			if w.active.Load() == 0 {
+			if w.active.Load() == 0 && w.front.Len() == 0 {
 				cancel()
 				return
 			}

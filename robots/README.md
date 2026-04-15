@@ -6,7 +6,7 @@ Robot compliance for the Anansi web crawler. Two mechanisms:
 
 | Function | Purpose |
 |----------|---------|
-| `Fetch(ctx, client, baseURL, logger)` | Fetches and parses robots.txt |
+| `Fetch(ctx, baseURL, logger)` | Fetches and parses robots.txt (creates own HTTP client via webutil) |
 | `Rules.IsAllowed(path)` | Checks path against `User-agent: *` Disallow rules |
 | `Rules.CrawlDelay()` | Returns `Crawl-delay` directive as `time.Duration` |
 

@@ -36,7 +36,7 @@ func TestFetch_StandardDisallow(t *testing.T) {
 	defer srv.Close()
 
 	var logBuf bytes.Buffer
-	rules, err := robots.Fetch(context.Background(), srv.Client(), mustParseURL(t, srv.URL), testLogger(&logBuf))
+	rules, err := robots.Fetch(context.Background(), mustParseURL(t, srv.URL), testLogger(&logBuf))
 	require.NoError(t, err)
 
 	assert.False(t, rules.IsAllowed("/admin"))
@@ -55,7 +55,7 @@ func TestFetch_EmptyBody(t *testing.T) {
 	defer srv.Close()
 
 	var logBuf bytes.Buffer
-	rules, err := robots.Fetch(context.Background(), srv.Client(), mustParseURL(t, srv.URL), testLogger(&logBuf))
+	rules, err := robots.Fetch(context.Background(), mustParseURL(t, srv.URL), testLogger(&logBuf))
 	require.NoError(t, err)
 
 	assert.True(t, rules.IsAllowed("/anything"))
@@ -70,7 +70,7 @@ func TestFetch_404(t *testing.T) {
 	defer srv.Close()
 
 	var logBuf bytes.Buffer
-	rules, err := robots.Fetch(context.Background(), srv.Client(), mustParseURL(t, srv.URL), testLogger(&logBuf))
+	rules, err := robots.Fetch(context.Background(), mustParseURL(t, srv.URL), testLogger(&logBuf))
 	require.NoError(t, err)
 
 	assert.True(t, rules.IsAllowed("/anything"))
@@ -86,7 +86,7 @@ func TestFetch_403_TreatedAsNotFound(t *testing.T) {
 	defer srv.Close()
 
 	var logBuf bytes.Buffer
-	rules, err := robots.Fetch(context.Background(), srv.Client(), mustParseURL(t, srv.URL), testLogger(&logBuf))
+	rules, err := robots.Fetch(context.Background(), mustParseURL(t, srv.URL), testLogger(&logBuf))
 	require.NoError(t, err)
 
 	assert.True(t, rules.IsAllowed("/anything"))
@@ -102,7 +102,7 @@ func TestFetch_ServerError(t *testing.T) {
 	defer srv.Close()
 
 	var logBuf bytes.Buffer
-	rules, err := robots.Fetch(context.Background(), srv.Client(), mustParseURL(t, srv.URL), testLogger(&logBuf))
+	rules, err := robots.Fetch(context.Background(), mustParseURL(t, srv.URL), testLogger(&logBuf))
 	assert.Error(t, err)
 	assert.Nil(t, rules)
 	assert.Contains(t, err.Error(), "500")
@@ -115,7 +115,7 @@ func TestFetch_NetworkError(t *testing.T) {
 	srv.Close()
 
 	var logBuf bytes.Buffer
-	rules, err := robots.Fetch(context.Background(), http.DefaultClient, mustParseURL(t, srv.URL), testLogger(&logBuf))
+	rules, err := robots.Fetch(context.Background(), mustParseURL(t, srv.URL), testLogger(&logBuf))
 	require.NoError(t, err)
 
 	assert.True(t, rules.IsAllowed("/anything"))
@@ -134,7 +134,7 @@ func TestFetch_ContextCancellation(t *testing.T) {
 	cancel()
 
 	var logBuf bytes.Buffer
-	rules, err := robots.Fetch(ctx, srv.Client(), mustParseURL(t, srv.URL), testLogger(&logBuf))
+	rules, err := robots.Fetch(ctx, mustParseURL(t, srv.URL), testLogger(&logBuf))
 	assert.Error(t, err)
 	assert.Nil(t, rules)
 }
@@ -149,7 +149,7 @@ func TestFetch_MultipleUserAgents(t *testing.T) {
 	defer srv.Close()
 
 	var logBuf bytes.Buffer
-	rules, err := robots.Fetch(context.Background(), srv.Client(), mustParseURL(t, srv.URL), testLogger(&logBuf))
+	rules, err := robots.Fetch(context.Background(), mustParseURL(t, srv.URL), testLogger(&logBuf))
 	require.NoError(t, err)
 
 	assert.False(t, rules.IsAllowed("/blocked"))
@@ -166,7 +166,7 @@ func TestFetch_AllowAndDisallow(t *testing.T) {
 	defer srv.Close()
 
 	var logBuf bytes.Buffer
-	rules, err := robots.Fetch(context.Background(), srv.Client(), mustParseURL(t, srv.URL), testLogger(&logBuf))
+	rules, err := robots.Fetch(context.Background(), mustParseURL(t, srv.URL), testLogger(&logBuf))
 	require.NoError(t, err)
 
 	assert.True(t, rules.IsAllowed("/public"))
@@ -185,7 +185,7 @@ func TestFetch_CrawlDelay(t *testing.T) {
 	defer srv.Close()
 
 	var logBuf bytes.Buffer
-	rules, err := robots.Fetch(context.Background(), srv.Client(), mustParseURL(t, srv.URL), testLogger(&logBuf))
+	rules, err := robots.Fetch(context.Background(), mustParseURL(t, srv.URL), testLogger(&logBuf))
 	require.NoError(t, err)
 
 	assert.Equal(t, 10*time.Second, rules.CrawlDelay())
@@ -200,7 +200,7 @@ func TestCrawlDelay_NotSpecified(t *testing.T) {
 	defer srv.Close()
 
 	var logBuf bytes.Buffer
-	rules, err := robots.Fetch(context.Background(), srv.Client(), mustParseURL(t, srv.URL), testLogger(&logBuf))
+	rules, err := robots.Fetch(context.Background(), mustParseURL(t, srv.URL), testLogger(&logBuf))
 	require.NoError(t, err)
 
 	assert.Equal(t, time.Duration(0), rules.CrawlDelay())
@@ -222,7 +222,7 @@ func TestIsAllowed_NilRules(t *testing.T) {
 	defer srv.Close()
 
 	var logBuf bytes.Buffer
-	rules, err := robots.Fetch(context.Background(), srv.Client(), mustParseURL(t, srv.URL), testLogger(&logBuf))
+	rules, err := robots.Fetch(context.Background(), mustParseURL(t, srv.URL), testLogger(&logBuf))
 	require.NoError(t, err)
 
 	assert.True(t, rules.IsAllowed("/anything"))
@@ -240,7 +240,7 @@ func TestFetch_NoStarUserAgent(t *testing.T) {
 	defer srv.Close()
 
 	var logBuf bytes.Buffer
-	rules, err := robots.Fetch(context.Background(), srv.Client(), mustParseURL(t, srv.URL), testLogger(&logBuf))
+	rules, err := robots.Fetch(context.Background(), mustParseURL(t, srv.URL), testLogger(&logBuf))
 	require.NoError(t, err)
 
 	assert.True(t, rules.IsAllowed("/blocked"))
@@ -259,7 +259,7 @@ func TestFetch_SetsUserAgentHeader(t *testing.T) {
 	defer srv.Close()
 
 	var logBuf bytes.Buffer
-	_, err := robots.Fetch(context.Background(), srv.Client(), mustParseURL(t, srv.URL), testLogger(&logBuf))
+	_, err := robots.Fetch(context.Background(), mustParseURL(t, srv.URL), testLogger(&logBuf))
 	require.NoError(t, err)
 
 	assert.Equal(t, "Anansi", receivedUA)

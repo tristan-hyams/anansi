@@ -12,6 +12,7 @@ import (
 
 	"github.com/tristan-hyams/anansi/robots"
 	"github.com/tristan-hyams/anansi/testutil"
+	"github.com/tristan-hyams/anansi/webutil"
 )
 
 // TestFetch_LiveSite fetches robots.txt from crawlme.monzo.com.
@@ -23,12 +24,9 @@ func TestFetch_LiveSite(t *testing.T) {
 	testutil.SkipIfNoIntegration(t)
 	t.Parallel()
 
-	client := &http.Client{Timeout: 10 * time.Second}
-
 	var logBuf bytes.Buffer
 	rules, err := robots.Fetch(
 		context.Background(),
-		client,
 		mustParseURL(t, "https://crawlme.monzo.com/"),
 		testLogger(&logBuf),
 	)
@@ -50,7 +48,7 @@ func TestParseXRobotsTag_LiveSite(t *testing.T) {
 	testutil.SkipIfNoIntegration(t)
 	t.Parallel()
 
-	client := &http.Client{Timeout: 10 * time.Second}
+	client := webutil.NewClient(10 * time.Second)
 
 	resp, err := client.Get("https://crawlme.monzo.com/")
 	require.NoError(t, err)

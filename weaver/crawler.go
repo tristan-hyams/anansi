@@ -23,6 +23,11 @@ type Crawler struct {
 }
 
 // crawl is the main loop — dequeue URLs, process them, repeat until context is cancelled.
+//
+// active is incremented immediately after a successful Dequeue and
+// decremented after processing completes. The monitor checks both
+// active == 0 AND an empty queue to avoid a race where a crawler is
+// between Dequeue and Add(1).
 func (c *Crawler) crawl(ctx context.Context) {
 	for {
 		fu, err := c.weaver.front.Dequeue(ctx)

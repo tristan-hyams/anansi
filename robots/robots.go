@@ -18,6 +18,8 @@ import (
 	"time"
 
 	"github.com/temoto/robotstxt"
+
+	"github.com/tristan-hyams/anansi/webutil"
 )
 
 // Rules wraps parsed robots.txt directives. A nil inner data
@@ -57,9 +59,12 @@ func (r *Rules) CrawlDelay() time.Duration {
 }
 
 // Fetch retrieves and parses robots.txt for the given base URL.
+// Creates its own HTTP client backed by the shared transport singleton.
 // Returns allow-all Rules on 404/403 or network error (with log message).
 // Only returns an error on context cancellation or non-404/403 HTTP errors.
-func Fetch(ctx context.Context, client *http.Client, baseURL *url.URL, logger *slog.Logger) (*Rules, error) {
+func Fetch(ctx context.Context, baseURL *url.URL, logger *slog.Logger) (*Rules, error) {
+
+	client := webutil.NewClient(fetchTimeout)
 
 	robotsURL := fmt.Sprintf("%s://%s/robots.txt", baseURL.Scheme, baseURL.Host)
 

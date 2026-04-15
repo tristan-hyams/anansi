@@ -15,10 +15,10 @@ Top-level packages are public - importable as libraries by external consumers.
 ## Dependency Direction
 
 ```
-cmd/anansi (main) → crawler → (frontier, parser, normalizer, robots)
+cmd/anansi (main) → weaver → (frontier, parser, normalizer, robots, webutil)
 ```
 
-`crawler` is the orchestrator. All other packages are leaf dependencies with no cross-imports between them.
+`weaver` is the orchestrator. All other packages are leaf dependencies with no cross-imports between them (except `robots` → `webutil` for HTTP client creation).
 
 ---
 
@@ -28,14 +28,22 @@ cmd/anansi (main) → crawler → (frontier, parser, normalizer, robots)
 anansi/
 ├── cmd/
 │   └── anansi/
-│       ├── main.go              # CLI entry: signal handling, wiring
+│       ├── main.go              # CLI entry: wiring, summary output
 │       ├── config.go            # AnansiConfig struct, ParseFlags, JSON serialization
 │       ├── config_test.go       # Config unit tests (package main_test)
-│       ├── consts.go            # Default constants (workers, rate, timeout)
-│       └── logger.go            # slog JSON handler setup
-├── crawler/                     # (Phase 5 - not yet implemented)
+│       ├── consts.go            # Default constants, exit codes, error format
+│       ├── logger.go            # slog JSON handler setup
+│       └── startup.go           # ParseFlags, SetupSignalContext
+├── weaver/
+│   ├── weaver.go                # Weaver struct, NewWeaver(), Weave(), monitor
+│   ├── crawler.go               # Crawler struct, page fetch pipeline
+│   ├── config.go                # WeaverConfig with Validate(), CrawlRate()
+│   ├── result.go                # Web struct with String(), PageResult
+│   ├── consts.go                # Defaults, log keys, summary formatting
+│   ├── weaver_test.go           # httptest integration tests
+│   └── weaver_integration_test.go # Live test against crawlme.monzo.com
 ├── frontier/
-│   ├── frontier.go              # Frontier interface, InMemory impl, FrontierURL struct
+│   ├── frontier.go              # Frontier interface, InMemory impl, FrontierURL
 │   ├── frontier_test.go         # Queue, dedup, select behavior, concurrency tests
 │   └── consts.go                # defaultBufferSize
 ├── normalizer/
@@ -48,11 +56,14 @@ anansi/
 │   └── testdata/                # HTML fixtures
 ├── robots/
 │   ├── robots.go                # Fetch() + Rules wrapper for robots.txt
-│   ├── xrobotstag.go            # ParseXRobotsTag() for per-page X-Robots-Tag header
+│   ├── xrobotstag.go            # ParseXRobotsTag() for per-page X-Robots-Tag
 │   ├── robots_test.go           # httptest-based unit tests
 │   ├── robots_integration_test.go # Live tests against crawlme.monzo.com
 │   ├── xrobotstag_test.go       # Directive parsing tests
-│   └── consts.go                # userAgent, logKeyURL, xRobotsTagHeader
+│   └── consts.go                # userAgent, fetchTimeout, xRobotsTagHeader
+├── webutil/
+│   ├── transport.go             # Singleton Transport(), NewClient()
+│   └── consts.go                # Dial, TLS, pool, timeout settings
 ├── testutil/
 │   └── integration.go           # SkipIfNoIntegration helper, .env.test loader
 ├── .context/                    # AI agent context (rules, architecture, journal)
@@ -71,6 +82,7 @@ anansi/
 ├── Makefile                     # build, test, lint, run, clean, tidy, update, docker
 ├── anansi.code-workspace        # VS Code workspace: F5 debug, revive lint-on-save
 ├── revive.toml                  # Revive linter config (enableAllRules + overrides)
+├── .env.test                    # Integration test config (GO_RUN_INTEGRATIONS)
 ├── README.md
 ├── .gitignore
 ├── go.mod
@@ -83,9 +95,11 @@ anansi/
 
 | Package | Responsibility | Key Types |
 |---|---|---|
-| `cmd/anansi` | CLI entry point. Parses flags, wires dependencies, handles SIGINT/SIGTERM. | `main()`, `AnansiConfig`, `ParseFlags()` |
-| `crawler` | Orchestrates the crawl. Owns worker pool, rate limiter, WaitGroup. Consumes from frontier, delegates to parser. | `Crawler`, `Config`, `Result` |
+| `cmd/anansi` | CLI entry point. Parses flags, wires weaver, prints summary. Only place that calls `os.Exit`. | `main()`, `AnansiConfig`, `ParseFlags()`, `OriginURL()` |
+| `weaver` | Orchestrates the crawl. Owns frontier, rate limiter, robots rules. Spawns Crawlers. | `Weaver`, `Crawler`, `WeaverConfig`, `Web`, `PageResult` |
 | `frontier` | URL queue + visited tracking. Interface-based for swappability. Dedup built into Enqueue. | `Frontier` (interface), `InMemory` (impl), `FrontierURL`, `Status` |
-| `parser` | Extracts `<a href>` links from HTML using tokenizer. No URL filtering - returns raw hrefs. | `ExtractLinks(ctx context.Context, r io.Reader) ([]string, error)` |
-| `normalizer` | Canonicalizes URLs: strips fragments, lowercases host, resolves relative paths. Pure functions. | `Normalize(base *url.URL, raw string) (*url.URL, error)` |
-| `robots` | robots.txt + X-Robots-Tag compliance. Fetches robots.txt once at start, parses per-page X-Robots-Tag on every response. | `Rules`, `IsAllowed()`, `Directives`, `ParseXRobotsTag()`, `Fetch()` |
+| `parser` | Extracts `<a href>` links from HTML using tokenizer. No URL filtering — returns raw hrefs. | `ExtractLinks(ctx, r io.Reader) ([]string, error)` |
+| `normalizer` | Canonicalizes URLs: strips fragments, lowercases host, resolves relative paths. Pure functions. | `Normalize(base, raw)`, `IsSameHost(origin, candidate)`, `IsFollowableScheme(u)` |
+| `robots` | robots.txt + X-Robots-Tag compliance. Creates own HTTP client via webutil. | `Fetch(ctx, baseURL, logger)`, `Rules`, `IsAllowed()`, `Directives`, `ParseXRobotsTag()` |
+| `webutil` | Shared HTTP transport singleton. Per-worker client creation. | `Transport()`, `NewClient(timeout)` |
+| `testutil` | Shared test helpers. Integration test gating via `.env.test`. | `SkipIfNoIntegration(t)` |

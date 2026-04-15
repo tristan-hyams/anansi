@@ -238,6 +238,24 @@ func TestConcurrentEnqueue(t *testing.T) {
 	assert.Equal(t, 20, count)
 }
 
+func TestLen(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+	f := newTestFrontier(t, 10)
+
+	assert.Equal(t, 0, f.Len())
+
+	require.NoError(t, f.Enqueue(ctx, newFrontierURL(t, "https://example.com/a", 0)))
+	assert.Equal(t, 1, f.Len())
+
+	require.NoError(t, f.Enqueue(ctx, newFrontierURL(t, "https://example.com/b", 0)))
+	assert.Equal(t, 2, f.Len())
+
+	_, err := f.Dequeue(ctx)
+	require.NoError(t, err)
+	assert.Equal(t, 1, f.Len())
+}
+
 func TestClear(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()

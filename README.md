@@ -58,12 +58,13 @@ Anansi uses a **worker pool** with a buffered channel as a work queue. A global 
 
 | Package | Responsibility |
 |---|---|
-| `cmd/anansi` | CLI entry point, flag parsing, signal handling |
-| `crawler` | Orchestrator: worker pool, rate limiter, WaitGroup |
+| `cmd/anansi` | CLI entry point, flag parsing, summary output |
+| `weaver` | Orchestrator: Weaver spawns Crawlers, owns frontier/rate limiter |
 | `frontier` | URL queue + visited tracking (interface-based) |
 | `parser` | HTML link extraction via tokenizer |
 | `normalizer` | URL canonicalization |
-| `robots` | robots.txt compliance |
+| `robots` | robots.txt + X-Robots-Tag compliance |
+| `webutil` | Shared HTTP transport singleton, per-worker clients |
 
 For detailed design decisions, trade-offs, and the URL processing pipeline, see [.context/ARCH.md](.context/ARCH.md).
 

@@ -25,6 +25,9 @@ type Frontier interface {
 	// available or the context is cancelled.
 	Dequeue(ctx context.Context) (*FrontierURL, error)
 
+	// Len returns the number of URLs currently in the queue.
+	Len() int
+
 	// Clear drains the queue and resets the visited set.
 	Clear()
 }
@@ -81,6 +84,11 @@ func (f *InMemory) Dequeue(ctx context.Context) (*FrontierURL, error) {
 	case <-ctx.Done():
 		return nil, ctx.Err()
 	}
+}
+
+// Len returns the number of URLs currently in the queue.
+func (f *InMemory) Len() int {
+	return len(f.queue)
 }
 
 // Clear drains the queue and resets the visited set.

@@ -10,17 +10,18 @@ Thin wiring layer — all logic lives in packages. This is the only place that c
 - Config loading from JSON (`LoadConfigFromFile`)
 - Structured logger setup (`SetupLogger`)
 - Signal handling for graceful shutdown (`SetupSignalContext`)
-- Wiring crawler dependencies and running the crawl
+- Wiring `weaver.NewWeaver()` → `weaver.Weave()`
+- Printing crawl summary via `web.String()`
 
 ## Files
 
 | File | Purpose |
 |------|---------|
-| `main.go` | Entry point — wires config, logger, signal context, crawler |
-| `config.go` | `AnansiConfig` struct with JSON serialization, `ParseFlags`, `OriginURL` |
-| `consts.go` | Default flag values (workers, rate, timeout, log level) |
+| `main.go` | Entry point — wires config, logger, signal context, weaver, prints summary |
+| `config.go` | `AnansiConfig` struct with JSON serialization, `OriginURL` |
+| `consts.go` | Default flag values, exit codes, error format |
 | `logger.go` | `SetupLogger` — slog JSON handler to stderr |
-| `startup.go` | `SetupSignalContext` — signal notification wiring |
+| `startup.go` | `ParseFlags`, `SetupSignalContext` |
 | `config_test.go` | Config unit tests |
 
 ## Usage
@@ -35,3 +36,11 @@ Flags:
   -timeout duration HTTP request timeout (default 30s)
   -log-level string Log level: debug, info, warn, error (default "info")
 ```
+
+## Exit Codes
+
+| Code | Meaning |
+|------|---------|
+| 0 | Crawl completed successfully |
+| 1 | Error (invalid config, crawl failure) |
+| 130 | Interrupted (SIGINT/Ctrl+C) |
