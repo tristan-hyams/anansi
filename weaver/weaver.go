@@ -12,7 +12,6 @@ import (
 	"log/slog"
 	"net/url"
 	"sync"
-	"sync/atomic"
 	"time"
 
 	"golang.org/x/time/rate"
@@ -31,7 +30,6 @@ type Weaver struct {
 	rules    *robots.Rules
 	logger   *slog.Logger
 	crawlers []*Crawler
-	active   atomic.Int32
 	mu       sync.Mutex
 	pages    []PageResult
 }
@@ -109,17 +107,17 @@ func (w *Weaver) Weave(ctx context.Context) (*Web, error) {
 }
 
 // monitorCompletion polls until the crawl is naturally complete.
-// Checks both conditions: no crawlers actively processing AND the queue
-// is empty. This avoids a race where a crawler is between Dequeue and
-// active.Add(1) — the queue would be empty but active == 0 briefly.
-// By requiring both, we only cancel when truly done.
+// Uses the frontier's pending counter — deterministic, no races.
+// Pending is incremented on enqueue and decremented when a crawler
+// calls Done() after fully processing a URL. When pending reaches 0,
+// every discovered URL has been processed and no new work was generated.
 func (w *Weaver) monitorCompletion(ctx context.Context, cancel context.CancelFunc) {
 	for {
 		select {
 		case <-ctx.Done():
 			return
 		case <-time.After(50 * time.Millisecond):
-			if w.active.Load() == 0 && w.front.Len() == 0 {
+			if w.front.IsDone() {
 				cancel()
 				return
 			}

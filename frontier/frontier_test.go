@@ -238,6 +238,91 @@ func TestConcurrentEnqueue(t *testing.T) {
 	assert.Equal(t, 20, count)
 }
 
+func TestPendingAndIsDone(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+	f := newTestFrontier(t, 10)
+
+	// Initially done — nothing enqueued.
+	assert.True(t, f.IsDone())
+	assert.Equal(t, int32(0), f.Pending())
+
+	// Enqueue 3 URLs.
+	require.NoError(t, f.Enqueue(ctx, newFrontierURL(t, "https://example.com/a", 0)))
+	require.NoError(t, f.Enqueue(ctx, newFrontierURL(t, "https://example.com/b", 0)))
+	require.NoError(t, f.Enqueue(ctx, newFrontierURL(t, "https://example.com/c", 0)))
+
+	assert.False(t, f.IsDone())
+	assert.Equal(t, int32(3), f.Pending())
+
+	// Dequeue and Done one.
+	_, err := f.Dequeue(ctx)
+	require.NoError(t, err)
+	f.Done()
+
+	assert.False(t, f.IsDone())
+	assert.Equal(t, int32(2), f.Pending())
+
+	// Finish remaining.
+	_, _ = f.Dequeue(ctx)
+	f.Done()
+	_, _ = f.Dequeue(ctx)
+	f.Done()
+
+	assert.True(t, f.IsDone())
+	assert.Equal(t, int32(0), f.Pending())
+}
+
+func TestIsDone_DoubleDoneDoesNotFalsePositive(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+	f := newTestFrontier(t, 10)
+
+	// Enqueue 1 URL, dequeue it, call Done twice (bug simulation).
+	require.NoError(t, f.Enqueue(ctx, newFrontierURL(t, "https://example.com/a", 0)))
+	require.NoError(t, f.Enqueue(ctx, newFrontierURL(t, "https://example.com/b", 0)))
+
+	_, _ = f.Dequeue(ctx)
+	f.Done()
+	f.Done() // double Done — pending goes to -1
+
+	// Pending is negative, but queue still has 1 item.
+	// IsDone must be false because the queue is not empty.
+	assert.False(t, f.IsDone(), "IsDone should be false when queue still has items despite negative pending")
+	assert.Equal(t, 1, f.Len())
+}
+
+func TestIsDone_QueueEmptyButPendingPositive(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+	f := newTestFrontier(t, 10)
+
+	// Enqueue and dequeue — URL is in-flight (dequeued but not Done).
+	require.NoError(t, f.Enqueue(ctx, newFrontierURL(t, "https://example.com/a", 0)))
+	_, _ = f.Dequeue(ctx)
+
+	// Queue is empty but pending is 1 — crawler is still processing.
+	assert.Equal(t, 0, f.Len())
+	assert.Equal(t, int32(1), f.Pending())
+	assert.False(t, f.IsDone(), "IsDone should be false when pending > 0 even if queue is empty")
+
+	// Now finish processing.
+	f.Done()
+	assert.True(t, f.IsDone())
+}
+
+func TestPending_DedupDoesNotIncrement(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+	f := newTestFrontier(t, 10)
+
+	require.NoError(t, f.Enqueue(ctx, newFrontierURL(t, "https://example.com/page", 0)))
+	require.NoError(t, f.Enqueue(ctx, newFrontierURL(t, "https://example.com/page", 0))) // dup
+
+	// Only 1 pending — duplicate was skipped.
+	assert.Equal(t, int32(1), f.Pending())
+}
+
 func TestLen(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()

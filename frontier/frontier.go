@@ -11,6 +11,7 @@ import (
 	"fmt"
 	"log/slog"
 	"sync"
+	"sync/atomic"
 )
 
 // Frontier is the URL queue + dedup layer for the crawler.
@@ -25,6 +26,19 @@ type Frontier interface {
 	// available or the context is cancelled.
 	Dequeue(ctx context.Context) (*FrontierURL, error)
 
+	// Done signals that a dequeued URL has been fully processed.
+	// Decrements the pending work counter.
+	Done()
+
+	// Pending returns the number of URLs that have been enqueued but
+	// not yet fully processed (enqueued - done).
+	Pending() int32
+
+	// IsDone returns true when all enqueued URLs have been fully processed.
+	// Deterministic — no polling races. Pending reaches 0 only when every
+	// URL that was ever enqueued has had Done() called.
+	IsDone() bool
+
 	// Len returns the number of URLs currently in the queue.
 	Len() int
 
@@ -37,6 +51,7 @@ type Frontier interface {
 type InMemory struct {
 	queue   chan *FrontierURL
 	visited sync.Map
+	pending atomic.Int32
 	logger  *slog.Logger
 }
 
@@ -69,6 +84,7 @@ func (f *InMemory) Enqueue(ctx context.Context, fu *FrontierURL) error {
 
 	select {
 	case f.queue <- fu:
+		f.pending.Add(1)
 		return nil
 	case <-ctx.Done():
 		return fmt.Errorf("enqueueing %s: %w", key, ctx.Err())
@@ -84,6 +100,23 @@ func (f *InMemory) Dequeue(ctx context.Context) (*FrontierURL, error) {
 	case <-ctx.Done():
 		return nil, ctx.Err()
 	}
+}
+
+// Done signals that a dequeued URL has been fully processed.
+func (f *InMemory) Done() {
+	f.pending.Add(-1)
+}
+
+// Pending returns the count of URLs enqueued but not yet fully processed.
+func (f *InMemory) Pending() int32 {
+	return f.pending.Load()
+}
+
+// IsDone returns true when all enqueued URLs have been fully processed
+// and the queue is physically empty. Both conditions guard against edge
+// cases — pending counter alone could mask a bug (e.g. double Done call).
+func (f *InMemory) IsDone() bool {
+	return f.pending.Load() <= 0 && len(f.queue) == 0
 }
 
 // Len returns the number of URLs currently in the queue.

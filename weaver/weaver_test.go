@@ -291,3 +291,92 @@ func TestWeave_ContextCancellation(t *testing.T) {
 	assert.Greater(t, result.Visited, 0)
 	assert.Less(t, result.Duration, 2*time.Second)
 }
+
+// TestWeave_NaturalCompletion_SinglePage verifies that the crawl terminates
+// naturally when a single page has no outgoing links. The pending counter
+// goes from 1 (origin enqueued) to 0 (origin processed, no new URLs).
+func TestWeave_NaturalCompletion_SinglePage(t *testing.T) {
+	t.Parallel()
+
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "text/html")
+		_, _ = fmt.Fprint(w, `<html><body><p>Dead end. No links.</p></body></html>`)
+	}))
+	defer srv.Close()
+
+	wv, err := weaver.NewWeaver(context.Background(), testConfig(), mustParseURL(t, srv.URL+"/"), testLogger())
+	require.NoError(t, err)
+
+	result, err := wv.Weave(context.Background())
+	require.NoError(t, err)
+
+	assert.Equal(t, 1, result.Visited)
+	assert.Less(t, result.Duration, 2*time.Second, "should terminate quickly, not hang")
+}
+
+// TestWeave_NaturalCompletion_AllLinksExternal verifies that the crawl
+// terminates when the origin page has links but all are external.
+// Pending: 1 (origin) → process origin → 0 new internal URLs → done.
+func TestWeave_NaturalCompletion_AllLinksExternal(t *testing.T) {
+	t.Parallel()
+
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "text/html")
+		_, _ = fmt.Fprint(w, `<html><body>
+			<a href="https://external-one.com/">External 1</a>
+			<a href="https://external-two.com/">External 2</a>
+			<a href="mailto:test@example.com">Email</a>
+		</body></html>`)
+	}))
+	defer srv.Close()
+
+	wv, err := weaver.NewWeaver(context.Background(), testConfig(), mustParseURL(t, srv.URL+"/"), testLogger())
+	require.NoError(t, err)
+
+	result, err := wv.Weave(context.Background())
+	require.NoError(t, err)
+
+	assert.Equal(t, 1, result.Visited)
+	assert.Less(t, result.Duration, 2*time.Second)
+}
+
+// TestWeave_NaturalCompletion_SmallSite verifies deterministic completion
+// on a small interconnected site where all pages eventually link back to
+// already-visited URLs. Pending goes: 1 → 3 → 2 → 1 → 0.
+func TestWeave_NaturalCompletion_SmallSite(t *testing.T) {
+	t.Parallel()
+
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "text/html")
+
+		switch r.URL.Path {
+		case "/":
+			_, _ = fmt.Fprint(w, `<html><body>
+				<a href="/a">A</a>
+				<a href="/b">B</a>
+			</body></html>`)
+		case "/a":
+			_, _ = fmt.Fprint(w, `<html><body>
+				<a href="/">Home</a>
+				<a href="/b">B</a>
+			</body></html>`)
+		case "/b":
+			_, _ = fmt.Fprint(w, `<html><body>
+				<a href="/">Home</a>
+				<a href="/a">A</a>
+			</body></html>`)
+		default:
+			http.NotFound(w, r)
+		}
+	}))
+	defer srv.Close()
+
+	wv, err := weaver.NewWeaver(context.Background(), testConfig(), mustParseURL(t, srv.URL+"/"), testLogger())
+	require.NoError(t, err)
+
+	result, err := wv.Weave(context.Background())
+	require.NoError(t, err)
+
+	assert.Equal(t, 3, result.Visited)
+	assert.Less(t, result.Duration, 5*time.Second, "should terminate deterministically, not hang")
+}

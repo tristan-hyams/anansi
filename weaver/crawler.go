@@ -24,10 +24,9 @@ type Crawler struct {
 
 // crawl is the main loop — dequeue URLs, process them, repeat until context is cancelled.
 //
-// active is incremented immediately after a successful Dequeue and
-// decremented after processing completes. The monitor checks both
-// active == 0 AND an empty queue to avoid a race where a crawler is
-// between Dequeue and Add(1).
+// Each processed URL calls frontier.Done() to decrement the pending counter.
+// When pending reaches 0, the monitor knows all discovered URLs have been
+// fully processed — deterministic completion without polling races.
 func (c *Crawler) crawl(ctx context.Context) {
 	for {
 		fu, err := c.weaver.front.Dequeue(ctx)
@@ -35,9 +34,8 @@ func (c *Crawler) crawl(ctx context.Context) {
 			return // context cancelled
 		}
 
-		c.weaver.active.Add(1)
 		c.processURL(ctx, fu)
-		c.weaver.active.Add(-1)
+		c.weaver.front.Done()
 	}
 }
 
