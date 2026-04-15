@@ -41,7 +41,7 @@ func newTestFrontier(t *testing.T, bufferSize int) *frontier.InMemory {
 // non-deterministic channel cases picks up whichever fires first
 // without getting stuck committed to one case.
 
-// TestSelect_ContextCancelUnblocksBlockedChannel — a select blocks on
+// TestSelect_ContextCancelUnblocksBlockedChannel - a select blocks on
 // a full channel send. A separate goroutine cancels the context after 2s.
 // Proves ctx.Done() fires even while the channel case is blocking.
 func TestSelect_ContextCancelUnblocksBlockedChannel(t *testing.T) {
@@ -83,7 +83,7 @@ func TestSelect_ContextCancelUnblocksBlockedChannel(t *testing.T) {
 	assert.Less(t, elapsed, 3*time.Second)
 }
 
-// TestSelect_ChannelUnblocksWhileContextPending — a select blocks on
+// TestSelect_ChannelUnblocksWhileContextPending - a select blocks on
 // a full channel send. A separate goroutine drains the channel after 2s.
 // Context is never cancelled. Proves the channel case fires even while
 // ctx.Done() is being watched.
@@ -163,7 +163,7 @@ func TestEnqueue_Dedup(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, "https://example.com/page", got.URL.String())
 
-	// Channel should be empty — second enqueue was skipped.
+	// Channel should be empty - second enqueue was skipped.
 	shortCtx, cancel := context.WithTimeout(ctx, 50*time.Millisecond)
 	defer cancel()
 
@@ -256,7 +256,7 @@ func TestClear(t *testing.T) {
 	_, err := f.Dequeue(shortCtx)
 	assert.ErrorIs(t, err, context.DeadlineExceeded)
 
-	// Visited set should be reset — same URL can be enqueued again.
+	// Visited set should be reset - same URL can be enqueued again.
 	require.NoError(t, f.Enqueue(ctx, newFrontierURL(t, "https://example.com/a", 0)))
 
 	got, err := f.Dequeue(ctx)

@@ -144,6 +144,6 @@ func TestExtractLinks_CancelledContext(t *testing.T) {
 	links, err := parser.ExtractLinks(ctx, strings.NewReader(html))
 
 	assert.ErrorIs(t, err, context.Canceled)
-	// No tokens processed — context was already cancelled before iteration.
+	// No tokens processed - context was already cancelled before iteration.
 	assert.Empty(t, links)
 }

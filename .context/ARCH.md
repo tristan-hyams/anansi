@@ -28,7 +28,7 @@ Built as a take-home challenge demonstrating: concurrency design, software struc
                   (token bucket)
 ```
 
-- **Buffered channel** acts as the work queue. Buffer size defaults to 100,000 — the visited set (not the channel) is the real bound on growth. Dedup is built into Enqueue via `sync.Map`.
+- **Buffered channel** acts as the work queue. Buffer size defaults to 100,000 - the visited set (not the channel) is the real bound on growth. Dedup is built into Enqueue via `sync.Map`.
 - **`FrontierURL`** wraps each URL with crawl metadata: depth, status (pending/visited/error), and error state. The crawler sets depth at enqueue time.
 - **`sync.WaitGroup`** lives in the crawler (not the frontier) to track in-flight workers. The frontier is a pure queue + dedup layer.
 - **`golang.org/x/time/rate` token bucket** enforces global rate limiting (default: 5 req/s). All workers draw a token before making HTTP requests.
@@ -51,24 +51,34 @@ Two distinct code paths:
 
 ---
 
-## URL Processing Pipeline
+## Page Fetch Pipeline
 
 ```
-Raw href from HTML
+Dequeue URL from frontier
   │
-  ├─ Parse with net/url ──► reject if error
+  ├─ Rate limiter wait
   │
-  ├─ Normalize ──► strip fragment, lowercase host, resolve relative, strip default port
+  ├─ HTTP GET
   │
-  ├─ Filter scheme ──► only http/https (reject mailto:, javascript:, tel:, etc.)
+  ├─ Check Content-Type ──► only parse text/html
   │
-  ├─ Filter domain ──► strict hostname match against seed URL
+  ├─ Check X-Robots-Tag header ──► if nofollow or none, skip link extraction
   │
-  ├─ Check robots.txt ──► reject if Disallowed
+  ├─ Parse HTML for <a href> links
   │
-  ├─ Check seen-set ──► reject if already visited
-  │
-  └─ Enqueue to frontier
+  └─ For each discovered href:
+       │
+       ├─ Parse with net/url ──► reject if error
+       │
+       ├─ Normalize ──► strip fragment, lowercase host, resolve relative, strip default port
+       │
+       ├─ Filter scheme ──► only http/https (reject mailto:, javascript:, tel:, etc.)
+       │
+       ├─ Filter domain ──► strict hostname match against seed URL
+       │
+       ├─ Check robots.txt ──► reject if Disallowed
+       │
+       └─ Enqueue to frontier (dedup built in)
 ```
 
 ---
@@ -87,13 +97,34 @@ Check `Content-Type` response header before parsing. Only parse `text/html` (wit
 
 ---
 
-## robots.txt
+## Robot Compliance
 
-Fetched once at crawl start from `{scheme}://{host}/robots.txt`. Parsed for `User-agent: *` Disallow rules. URLs checked against rules before enqueuing.
+Two complementary mechanisms:
 
-Uses `github.com/temoto/robotstxt` for parsing - robots.txt parsing is not a crawler framework.
+### robots.txt (once at crawl start)
 
-Optional: `Crawl-delay` directive fed into rate limiter if present.
+Fetched from `{scheme}://{host}/robots.txt`. Parsed for `User-agent: *` Disallow rules. URLs checked against rules before enqueuing.
+
+Uses `github.com/temoto/robotstxt` for parsing — not a crawler framework.
+
+`Crawl-delay` directive exposed as `time.Duration` for the rate limiter.
+
+Graceful degradation:
+- **404:** no rules, allow all.
+- **403:** treated as not found. CDN/static hosts (S3, CloudFront, Azure Blob, GCS) often return 403 for missing files instead of 404 because the bucket doesn't allow public listing.
+- **5xx / other 4xx:** returned as error to the caller.
+- **Network error:** allow all with warning log.
+
+Request includes `User-Agent: Anansi` and `Accept: text/plain` headers.
+
+### X-Robots-Tag (per page response)
+
+Checked on every HTTP response via the `X-Robots-Tag` header. Relevant directives:
+- **`nofollow`** or **`none`**: skip link extraction for this page.
+- **`noindex`**: not relevant for crawling (search engine indexing concern).
+- **`follow`** or absent: proceed normally.
+
+Example from crawlme.monzo.com: `X-Robots-Tag: noindex,follow` — don't index, but do follow links.
 
 ---
 

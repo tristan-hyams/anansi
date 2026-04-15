@@ -3,7 +3,7 @@
 // default implementation using a buffered channel and sync.Map.
 //
 // In a production system, swap InMemory for a Redis/RabbitMQ-backed
-// implementation via the Frontier interface — no crawler changes needed.
+// implementation via the Frontier interface - no crawler changes needed.
 package frontier
 
 import (
@@ -14,7 +14,7 @@ import (
 )
 
 // Frontier is the URL queue + dedup layer for the crawler.
-// Enqueue checks visited state internally — callers do not need to
+// Enqueue checks visited state internally - callers do not need to
 // coordinate IsVisited + Enqueue separately.
 type Frontier interface {
 	// Enqueue adds a URL to the queue if it hasn't been visited.
@@ -39,7 +39,7 @@ type InMemory struct {
 
 // NewInMemory creates an InMemory frontier with the given buffer size.
 // If bufferSize is less than 1, it defaults to defaultBufferSize.
-// The visited set is the real bound on growth — the buffer just needs
+// The visited set is the real bound on growth - the buffer just needs
 // to be large enough to avoid blocking writers.
 func NewInMemory(bufferSize int, logger *slog.Logger) *InMemory {
 	if bufferSize < 1 {

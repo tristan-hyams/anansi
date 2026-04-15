@@ -1,6 +1,6 @@
 // Package parser extracts raw href values from HTML anchor tags.
 // It uses the golang.org/x/net/html tokenizer for robust handling
-// of malformed HTML. No filtering or normalization is performed —
+// of malformed HTML. No filtering or normalization is performed -
 // that is the caller's responsibility.
 package parser
 
@@ -20,7 +20,7 @@ import (
 // of large or buffered documents. Partial results are returned alongside
 // the context error.
 //
-// The html.Tokenizer is a state machine — avoid concurrency or parallelism
+// The html.Tokenizer is a state machine - avoid concurrency or parallelism
 // for token iteration. Parallelism belongs in the crawler (multiple workers
 // parsing different pages), not within a single page parse.
 //
