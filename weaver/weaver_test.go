@@ -248,6 +248,8 @@ func TestWeave_MaxDepth(t *testing.T) {
 			_, _ = fmt.Fprint(w, `<html><body><a href="/depth2">D2</a></body></html>`)
 		case "/depth2":
 			_, _ = fmt.Fprint(w, `<html><body><a href="/depth3">D3</a></body></html>`)
+		case "/depth3":
+			_, _ = fmt.Fprint(w, `<html><body><a href="/depth4">D4</a></body></html>`)
 		default:
 			http.NotFound(w, r)
 		}
@@ -255,7 +257,7 @@ func TestWeave_MaxDepth(t *testing.T) {
 	defer srv.Close()
 
 	cfg := testConfig()
-	cfg.MaxDepth = 2
+	cfg.MaxDepth = 2 // crawl depths 0, 1, 2. Depth 3+ skipped.
 
 	wv, err := weaver.NewWeaver(context.Background(), cfg, mustParseURL(t, srv.URL+"/"), testLogger())
 	require.NoError(t, err)
@@ -263,9 +265,9 @@ func TestWeave_MaxDepth(t *testing.T) {
 	result, err := wv.Weave(context.Background())
 	require.NoError(t, err)
 
-	for _, p := range result.Pages {
-		assert.LessOrEqual(t, p.Depth, 1, "depth %d too deep: %s", p.Depth, p.URL)
-	}
+	// Depths 0, 1, 2 should be visited. Depth 3 recorded as skipped.
+	assert.Equal(t, 3, result.Visited, "depths 0, 1, 2 should be visited")
+	assert.Equal(t, 1, result.Skipped, "depth 3 should be skipped")
 }
 
 func TestWeave_ContextCancellation(t *testing.T) {

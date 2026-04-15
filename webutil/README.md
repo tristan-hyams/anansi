@@ -5,16 +5,16 @@ Shared HTTP client infrastructure for the Anansi web crawler.
 ## Usage
 
 ```go
-// Create once — shared connection pool.
-transport := webutil.NewTransport()
+// Per-worker client — backed by singleton transport.
+client := webutil.NewClient(30 * time.Second)
 
-// Create per-worker — each gets its own client, shared pool.
-client := webutil.NewClient(30*time.Second, transport)
+// Access the singleton transport directly (rarely needed).
+transport := webutil.Transport()
 ```
 
 ## Why
 
-- **One Transport, many Clients.** The `http.Transport` is the connection pool (TCP, TLS, keep-alives). It's safe for concurrent use and should be shared. The `http.Client` holds per-request config (timeout, redirects) and should be per-worker.
+- **Singleton Transport, many Clients.** `Transport()` returns a single `*http.Transport` via `sync.Once` — shared connection pool across all HTTP clients. `NewClient(timeout)` creates a per-worker client wrapping it.
 - **Tuned for crawling.** Dial timeout, TLS timeout, idle connection limits, and keep-alive are configured for a long-lived single-domain crawl — not Go's conservative defaults.
 - **Single-domain optimisation.** `MaxIdleConnsPerHost` equals `MaxIdleConns` since we're crawling one host.
 
@@ -28,5 +28,5 @@ client := webutil.NewClient(30*time.Second, transport)
 | Max idle per host | 100 | Same as total — single domain |
 | Idle conn timeout | 90s | Close stale connections |
 | TLS handshake timeout | 10s | Fail fast on TLS issues |
-| Response header timeout | 30s | Don't wait forever for slow servers |
+| Response header timeout | 10s | Fail fast if server goes silent |
 | HTTP/2 | Enabled | Better multiplexing if server supports it |

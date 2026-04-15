@@ -27,7 +27,7 @@ URL canonicalization. Pure functions, zero dependencies, highest test density.
   - Resolve relative URLs against base (`net/url.ResolveReference`)
   - Strip default ports (`:80` for HTTP, `:443` for HTTPS)
   - Consistent trailing slash handling
-  - `IsSameDomain(seed, candidate *url.URL) bool` - strict hostname match
+  - `IsSameHost(origin, candidate *url.URL) bool` - strict hostname match
   - `IsFollowableScheme(u *url.URL) bool` - only `http` and `https`
 - [ ] `normalizer/normalizer_test.go`
   - Table-driven tests: 15+ cases covering every transform
@@ -108,39 +108,35 @@ robots.txt compliance. Fetches and parses rules.
 
 ---
 
-## Phase 5 - crawler
+## Phase 5 — weaver
 
 Orchestrator. Wires everything together. This is the core.
 
-- [ ] `crawler/crawler.go`
-  - `Config` struct: Workers, RateLimit, MaxDepth, Timeout, BufferSize, UserAgent
-  - `Crawler` struct: owns frontier, rate limiter, HTTP client, robots rules, WaitGroup, slog logger
-  - `New(cfg Config, seed *url.URL, logger *slog.Logger) (*Crawler, error)`
-    - Fetch robots.txt during construction
-    - Initialize rate limiter (`golang.org/x/time/rate`)
-    - Initialize frontier with seed URL
-  - `Run(ctx context.Context) (*Result, error)`
-    - Launch N worker goroutines
-    - Each worker: Dequeue → rate limit wait → HTTP GET → check Content-Type → parse → normalize + filter → enqueue new URLs
-    - Monitor goroutine: `wg.Wait()` → close work channel (natural completion)
-    - Context cancellation path: drain workers, log discarded queue depth
-  - `Result` struct: URLs visited, links per page, duration, skipped count
-  - Worker loop detail:
-    - `rate.Limiter.Wait(ctx)` before each request
-    - Check `Content-Type: text/html` before parsing
-    - For each extracted href: normalize → check scheme → check domain → check robots → check visited → enqueue
-    - Log each page: URL, link count, depth, duration
-- [ ] `crawler/crawler_test.go`
-  - Happy path: 3-page site, verify all visited
-  - Cycle detection: A → B → A, no infinite loop
-  - External links filtered: internal + external mix, only internal followed
-  - Non-HTML skipped: link to JSON endpoint, not parsed
-  - robots.txt respected: disallowed path not visited
-  - Rate limiting: verify requests are spaced (timing-based assertion with tolerance)
-  - Context cancellation: cancel mid-crawl, verify clean shutdown
-  - All tests use `httptest.NewServer` with canned HTML
+- [x] `weaver/weaver.go`
+  - `WeaverConfig` struct: Workers, Rate, MaxDepth, Timeout, BufferSize, UserAgent
+  - `Weaver` struct: owns frontier, rate limiter, robots rules, pre-created Crawlers
+  - `NewWeaver(ctx context.Context, cfg *WeaverConfig, origin *url.URL, logger *slog.Logger) (*Weaver, error)`
+    - Fetch robots.txt during construction (via `robots.Fetch`)
+    - Initialize rate limiter, respecting `CrawlDelay` from robots.txt
+    - Initialize frontier with origin URL
+    - Pre-create Crawlers with per-worker HTTP clients via `webutil.NewClient`
+  - `Weave(ctx context.Context) (*Web, error)`
+    - Launch N Crawler goroutines
+    - Each Crawler: Dequeue → max depth check → rate limit → HTTP GET → Content-Type → X-Robots-Tag → parse → normalize/filter → enqueue
+    - Monitor goroutine: polls `frontier.IsDone()` for natural completion
+    - Context cancellation path: drain workers via ctx.Done()
+  - `Web` struct: Visited, Skipped, Duration, Pages, OriginURL
+    - `String()` — markdown summary with spider banner, stats, sitemap tree
+    - `JSON()` — machine-readable JSON output
+    - `ErrorLog()` — errors grouped by reason with timestamps
+    - `ComputeStats()` — latency P50/P95/P99, status codes, content-type breakdown
+- [x] `weaver/weaver_test.go` + `weaver/weaver_integration_test.go`
+  - Happy path, cycle detection, external link filtering, non-HTML skip
+  - robots.txt respected, X-Robots-Tag nofollow, max depth
+  - Context cancellation, natural completion (single page, all-external, small site)
+  - Live integration test against crawlme.monzo.com
 
-**Exit criteria:** `make test -race` passes. Crawler completes on a test site, respects all filters, terminates cleanly on both natural completion and cancellation.
+**Exit criteria:** `make test` passes. Weaver completes on test sites and crawlme.monzo.com, respects all filters, terminates cleanly.
 
 ---
 

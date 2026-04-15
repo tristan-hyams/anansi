@@ -10,3 +10,4 @@ FROM alpine:3.23
 RUN apk add --no-cache ca-certificates
 COPY --from=build /anansi /usr/local/bin/anansi
 ENTRYPOINT ["anansi"]
+CMD ["https://crawlme.monzo.com/"]

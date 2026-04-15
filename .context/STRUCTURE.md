@@ -38,13 +38,15 @@ anansi/
 │   ├── weaver.go                # Weaver struct, NewWeaver(), Weave(), monitor
 │   ├── crawler.go               # Crawler struct, page fetch pipeline
 │   ├── config.go                # WeaverConfig with Validate(), CrawlRate()
-│   ├── result.go                # Web struct with String(), PageResult
-│   ├── consts.go                # Defaults, log keys, summary formatting
+│   ├── result.go                # Web struct with String(), ErrorLog(), PageResult
+│   ├── json.go                  # Web.JSON() — machine-readable output
+│   ├── stats.go                 # ComputeStats(), latency P50/P95/P99
+│   ├── consts.go                # Defaults, log keys, summary formatting, banner
 │   ├── weaver_test.go           # httptest integration tests
 │   └── weaver_integration_test.go # Live test against crawlme.monzo.com
 ├── frontier/
-│   ├── frontier.go              # Frontier interface, InMemory impl, FrontierURL
-│   ├── frontier_test.go         # Queue, dedup, select behavior, concurrency tests
+│   ├── frontier.go              # Frontier interface (7 methods), InMemory impl
+│   ├── frontier_test.go         # Queue, dedup, select behavior, pending, concurrency
 │   └── consts.go                # defaultBufferSize
 ├── normalizer/
 │   ├── normalizer.go            # Normalize, IsSameHost, IsFollowableScheme
@@ -95,9 +97,9 @@ anansi/
 
 | Package | Responsibility | Key Types |
 |---|---|---|
-| `cmd/anansi` | CLI entry point. Parses flags, wires weaver, prints summary. Only place that calls `os.Exit`. | `main()`, `AnansiConfig`, `ParseFlags()`, `OriginURL()` |
-| `weaver` | Orchestrates the crawl. Owns frontier, rate limiter, robots rules. Spawns Crawlers. | `Weaver`, `Crawler`, `WeaverConfig`, `Web`, `PageResult` |
-| `frontier` | URL queue + visited tracking. Interface-based for swappability. Dedup built into Enqueue. | `Frontier` (interface), `InMemory` (impl), `FrontierURL`, `Status` |
+| `cmd/anansi` | CLI entry point. Parses flags, wires weaver, writes output files. Only place that calls `os.Exit`. | `main()`, `AnansiConfig`, `ParseFlags()`, `OriginURL()` |
+| `weaver` | Orchestrates the crawl. Owns frontier, rate limiter, robots rules. Pre-creates Crawlers. | `Weaver`, `Crawler`, `WeaverConfig`, `Web`, `PageResult`, `Stats` |
+| `frontier` | URL queue + visited tracking + pending counter. Interface-based for swappability. | `Frontier` (7 methods), `InMemory`, `FrontierURL`, `Status` |
 | `parser` | Extracts `<a href>` links from HTML using tokenizer. No URL filtering — returns raw hrefs. | `ExtractLinks(ctx, r io.Reader) ([]string, error)` |
 | `normalizer` | Canonicalizes URLs: strips fragments, lowercases host, resolves relative paths. Pure functions. | `Normalize(base, raw)`, `IsSameHost(origin, candidate)`, `IsFollowableScheme(u)` |
 | `robots` | robots.txt + X-Robots-Tag compliance. Creates own HTTP client via webutil. | `Fetch(ctx, baseURL, logger)`, `Rules`, `IsAllowed()`, `Directives`, `ParseXRobotsTag()` |

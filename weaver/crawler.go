@@ -46,8 +46,10 @@ func (c *Crawler) processURL(ctx context.Context, fu *frontier.FrontierURL) {
 	start := time.Now()
 	pageURL := fu.URL.String()
 
-	if w.cfg.MaxDepth > 0 && fu.Depth >= w.cfg.MaxDepth {
+	// MaxDepth=3 means crawl depths 0, 1, 2, 3. Skip depth 4+.
+	if w.cfg.MaxDepth > 0 && fu.Depth > w.cfg.MaxDepth {
 		w.logger.Debug("max depth reached, skipping", logKeyURL, pageURL, logKeyDepth, fu.Depth)
+		w.recordPage(PageResult{URL: pageURL, Depth: fu.Depth, Duration: time.Since(start), Error: errMaxDepth})
 		return
 	}
 
@@ -71,22 +73,29 @@ func (c *Crawler) handleResponse(ctx context.Context, fu *frontier.FrontierURL, 
 
 	w := c.weaver
 	pageURL := fu.URL.String()
+	ct := resp.Header.Get("Content-Type")
 
 	w.logger.Debug("fetched", logKeyURL, pageURL, "status", resp.StatusCode)
 
 	if !isHTML(resp) {
 		w.logger.Debug("non-HTML content, skipping parse",
 			logKeyURL, pageURL,
-			"content_type", resp.Header.Get("Content-Type"),
+			"content_type", ct,
 		)
-		w.recordPage(PageResult{URL: pageURL, Depth: fu.Depth, Status: resp.StatusCode, Duration: time.Since(start)})
+		w.recordPage(PageResult{
+			URL: pageURL, Depth: fu.Depth, Status: resp.StatusCode,
+			ContentType: ct, Duration: time.Since(start),
+		})
 		return
 	}
 
 	directives := robots.ParseXRobotsTag(resp.Header)
 	if !directives.ShouldFollow() {
 		w.logger.Info("X-Robots-Tag nofollow, skipping link extraction", logKeyURL, pageURL)
-		w.recordPage(PageResult{URL: pageURL, Depth: fu.Depth, Status: resp.StatusCode, Duration: time.Since(start)})
+		w.recordPage(PageResult{
+			URL: pageURL, Depth: fu.Depth, Status: resp.StatusCode,
+			ContentType: ct, Duration: time.Since(start),
+		})
 		return
 	}
 
@@ -104,7 +113,7 @@ func (c *Crawler) handleResponse(ctx context.Context, fu *frontier.FrontierURL, 
 
 	w.recordPage(PageResult{
 		URL: pageURL, Links: len(links), Depth: fu.Depth,
-		Status: resp.StatusCode, Duration: time.Since(start),
+		Status: resp.StatusCode, ContentType: ct, Duration: time.Since(start),
 	})
 
 	c.enqueueLinks(ctx, fu, links)

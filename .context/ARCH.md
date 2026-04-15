@@ -14,7 +14,7 @@ Built as a take-home challenge demonstrating: concurrency design, software struc
 
 ## Concurrency Model
 
-**Worker pool** with configurable concurrency (default: 5 workers).
+**Worker pool** with configurable concurrency (default: 1 worker, configurable via `-workers`).
 
 ```
                     ┌──────────┐
@@ -29,10 +29,11 @@ Built as a take-home challenge demonstrating: concurrency design, software struc
 ```
 
 - **Buffered channel** acts as the work queue. Buffer size defaults to 100,000 - the visited set (not the channel) is the real bound on growth. Dedup is built into Enqueue via `sync.Map`.
-- **`FrontierURL`** wraps each URL with crawl metadata: depth, status (pending/visited/error), and error state. The crawler sets depth at enqueue time.
-- **`sync.WaitGroup`** lives in the crawler (not the frontier) to track in-flight workers. The frontier is a pure queue + dedup layer.
-- **`golang.org/x/time/rate` token bucket** enforces global rate limiting (default: 5 req/s). All workers draw a token before making HTTP requests.
-- **`signal.NotifyContext`** for graceful shutdown on SIGINT/SIGTERM. Cancels context, workers drain, frontier select cases unblock via ctx.Done().
+- **`FrontierURL`** wraps each URL with crawl metadata: depth, status, content-type, and error state. Depth is set by the Weaver at enqueue time.
+- **Pending counter** (`atomic.Int32` in frontier) tracks work: incremented on `Enqueue`, decremented via `Done()` after processing. `IsDone()` checks `pending <= 0 AND queue empty` for deterministic completion detection.
+- **`sync.WaitGroup`** in `Weaver.Weave()` tracks Crawler goroutines. Pre-created Crawlers are launched via `wg.Go()`.
+- **`golang.org/x/time/rate` token bucket** enforces global rate limiting (default: 1 req/s). All Crawlers draw a token before making HTTP requests. Respects `Crawl-delay` from robots.txt if stricter.
+- **`signal.NotifyContext`** for graceful shutdown on SIGINT/SIGTERM. Cancels context, Crawlers drain, frontier select cases unblock via ctx.Done().
 
 ### Production note
 
@@ -46,8 +47,8 @@ Two distinct code paths:
 
 | Condition | Trigger | Behaviour |
 |---|---|---|
-| Natural completion | WaitGroup counter reaches zero (all workers idle + empty queue) | Clean exit, print summary |
-| Signal interrupt | SIGINT/SIGTERM via `signal.NotifyContext` | Cancel context, drain workers, log discarded URLs, flush logger |
+| Natural completion | `frontier.IsDone()` returns true (pending counter at 0, queue empty) | Monitor cancels crawl context, Crawlers exit, summary written |
+| Signal interrupt | SIGINT/SIGTERM via `signal.NotifyContext` | Cancel context, Crawlers exit via `ctx.Done()`, partial results written |
 
 ---
 

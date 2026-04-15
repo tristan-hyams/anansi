@@ -54,9 +54,51 @@ func main() {
 		os.Exit(exitCodeError)
 	}
 
-	_, _ = fmt.Print(web.String())
+	if err := writeOutputFiles(web); err != nil {
+		_, _ = fmt.Fprintf(os.Stderr, errFmt, err)
+		os.Exit(exitCodeError)
+	}
+
+	// Short terminal summary — full report is in the files.
+	_, _ = fmt.Fprintf(os.Stderr,
+		"\ncrawl complete: %d pages crawled, %d skipped, %s\n",
+		web.Visited, web.Skipped, web.Duration.Round(summaryDurationRound),
+	)
 
 	if ctx.Err() != nil {
 		os.Exit(exitCodeSIGINT)
 	}
+}
+
+func writeOutputFiles(web *weaver.Web) error {
+	// Markdown summary.
+	if err := os.WriteFile(outputResultsFile, []byte(web.String()), 0o644); err != nil {
+		return fmt.Errorf("writing results: %w", err)
+	}
+
+	_, _ = fmt.Fprintf(os.Stderr, "results written to %s\n", outputResultsFile)
+
+	// JSON output.
+	jsonData, err := web.JSON()
+	if err != nil {
+		return fmt.Errorf("generating JSON: %w", err)
+	}
+
+	if err := os.WriteFile(outputJSONFile, jsonData, 0o644); err != nil {
+		return fmt.Errorf("writing JSON: %w", err)
+	}
+
+	_, _ = fmt.Fprintf(os.Stderr, "json written to %s\n", outputJSONFile)
+
+	// Error log (only if errors occurred).
+	errorLog := web.ErrorLog()
+	if errorLog != "" {
+		if err := os.WriteFile(outputErrorsFile, []byte(errorLog), 0o644); err != nil {
+			return fmt.Errorf("writing errors: %w", err)
+		}
+
+		_, _ = fmt.Fprintf(os.Stderr, "errors written to %s\n", outputErrorsFile)
+	}
+
+	return nil
 }

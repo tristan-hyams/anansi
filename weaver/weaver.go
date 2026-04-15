@@ -151,8 +151,9 @@ func (w *Weaver) buildResult(start time.Time) *Web {
 	}
 }
 
-// recordPage appends a page result (thread-safe).
+// recordPage appends a page result with timestamp (thread-safe).
 func (w *Weaver) recordPage(pr PageResult) {
+	pr.Timestamp = time.Now()
 	w.mu.Lock()
 	defer w.mu.Unlock()
 	w.pages = append(w.pages, pr)

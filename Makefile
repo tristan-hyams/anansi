@@ -4,6 +4,7 @@
 
 BINARY  := bin\anansi.exe
 URL     ?= https://crawlme.monzo.com/
+ARGS    ?=
 
 export CGO_ENABLED=0
 
@@ -17,7 +18,7 @@ lint:
 	revive -config revive.toml ./...
 
 run: build
-	$(BINARY) $(URL)
+	$(BINARY) $(ARGS) $(URL)
 
 clean:
 	if exist bin rmdir /s /q bin
@@ -38,4 +39,4 @@ docker:
 	docker build -t anansi .
 
 docker-run: docker
-	docker run --rm anansi $(URL)
+	docker run --rm anansi $(ARGS) $(URL)
