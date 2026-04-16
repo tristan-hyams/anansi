@@ -17,9 +17,9 @@ type WeaverConfig struct {
 	Timeout          time.Duration
 	BufferSize       int
 	UserAgent        string
-	ProgressInterval int           // URLs processed before each crawler logs a progress checkpoint. 0 uses default (100).
-	LogLinks         bool          // Print each visited URL and its discovered links to the output writer.
-	MaxRetries       int           // Max retry attempts for transient HTTP errors. 0 uses default (2). -1 disables retries.
+	ProgressInterval int  // URLs between progress checkpoints. 0 uses default (100).
+	LogLinks         bool // Print visited URLs and links to stdout.
+	MaxRetries       int  // Retry attempts for transient errors. 0=default(2), -1=off.
 	MaxDuration      time.Duration // Max crawl duration. 0 = unlimited.
 }
 

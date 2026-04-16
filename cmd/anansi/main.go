@@ -3,8 +3,6 @@ package main
 import (
 	"fmt"
 	"io"
-	"net/http"
-	_ "net/http/pprof" //nolint:revive // Blank import registers pprof handlers.
 	"os"
 
 	"github.com/tristan-hyams/anansi/fileutil"
@@ -20,14 +18,7 @@ func main() {
 	}
 
 	logger := SetupLogger(cfg)
-
-	if os.Getenv("ANANSI_DEBUG") != "" {
-		go func() {
-			addr := "localhost:6060"
-			logger.Info("pprof debug server started", "addr", addr)
-			_ = http.ListenAndServe(addr, nil) //nolint:revive // Debug server, best-effort.
-		}()
-	}
+	StartPprofServer(logger)
 
 	ctx, cancel := SetupSignalContext()
 	defer cancel()

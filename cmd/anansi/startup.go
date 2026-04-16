@@ -6,6 +6,8 @@ import (
 	"flag"
 	"fmt"
 	"log/slog"
+	"net/http"
+	_ "net/http/pprof" //nolint:revive // Blank import registers pprof handlers.
 	"os"
 	"os/signal"
 )
@@ -22,7 +24,8 @@ func ParseFlags() (*AnansiConfig, error) {
 	timeout := flag.Duration("timeout", defaultTimeout, "HTTP request timeout")
 	logLevel := flag.String("log-level", defaultLogLevel, "log level (debug, info, warn, error)")
 	logLinks := flag.Bool("log-links", true, "print each visited URL and its links to stdout")
-	maxRetries := flag.Int("max-retries", defaultMaxRetries, "max retry attempts for transient HTTP errors (-1 = disabled)")
+	maxRetries := flag.Int("max-retries", defaultMaxRetries,
+		"max retry attempts for transient HTTP errors (-1 = disabled)")
 	maxDuration := flag.Duration("max-duration", 0, "max crawl duration (0 = unlimited, e.g. 60s, 5m)")
 
 	flag.Usage = func() {
@@ -60,6 +63,20 @@ func ParseFlags() (*AnansiConfig, error) {
 // SetupSignalContext returns a context that is cancelled on SIGINT (Ctrl+C).
 func SetupSignalContext() (context.Context, context.CancelFunc) {
 	return signal.NotifyContext(context.Background(), os.Interrupt)
+}
+
+// StartPprofServer launches a pprof HTTP server on localhost:6060 when
+// the ANANSI_DEBUG environment variable is set. No-op otherwise.
+func StartPprofServer(logger *slog.Logger) {
+	if os.Getenv("ANANSI_DEBUG") == "" {
+		return
+	}
+	go func() {
+		addr := "localhost:6060"
+		logger.Info("pprof debug server started", "addr", addr)
+		//nolint:revive // Debug server, best-effort.
+		_ = http.ListenAndServe(addr, nil)
+	}()
 }
 
 // SetupLogger configures slog with a JSON handler and the specified log level.

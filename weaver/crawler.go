@@ -76,7 +76,7 @@ func (c *Crawler) processURL(ctx context.Context, fu *frontier.FrontierURL) {
 
 	resp, err := c.fetchPage(ctx, fu.URL)
 	if err != nil {
-		w.logger.Warn("fetch failed", logKeyURL, pageURL, "error", err)
+		w.logger.Warn("fetch failed", logKeyURL, pageURL, logKeyError, err)
 		w.recordPage(PageResult{URL: pageURL, Depth: fu.Depth, Duration: time.Since(start), Error: err})
 		return
 	}
@@ -126,7 +126,7 @@ func (c *Crawler) extractAndEnqueue(
 
 	links, err := parser.ExtractLinks(ctx, resp.Body)
 	if err != nil {
-		w.logger.Warn("link extraction failed", logKeyURL, pageURL, "error", err)
+		w.logger.Warn("link extraction failed", logKeyURL, pageURL, logKeyError, err)
 	}
 
 	foundLinks := c.normalizeLinks(fu.URL, links)
@@ -172,7 +172,7 @@ func (c *Crawler) enqueueLinks(ctx context.Context, parent *frontier.FrontierURL
 	for _, raw := range hrefs {
 		normalized, err := normalizer.Normalize(parent.URL, raw)
 		if err != nil {
-			w.logger.Debug("normalize failed, skipping", "href", raw, "error", err)
+			w.logger.Debug("normalize failed, skipping", "href", raw, logKeyError, err)
 			continue
 		}
 
@@ -207,7 +207,7 @@ func (c *Crawler) fetchPage(ctx context.Context, u *url.URL) (*http.Response, er
 	for attempt := range maxAttempts {
 		resp, err := c.doRequest(ctx, u)
 
-		if err == nil && resp.StatusCode < 500 {
+		if err == nil && resp.StatusCode < serverErrorThreshold {
 			return resp, nil
 		}
 
@@ -229,7 +229,7 @@ func (c *Crawler) fetchPage(ctx context.Context, u *url.URL) (*http.Response, er
 			logKeyURL, u.String(),
 			"attempt", attempt+1,
 			"delay", delay,
-			"error", lastErr,
+			logKeyError, lastErr,
 		)
 
 		select {

@@ -24,4 +24,9 @@ const (
 	logKeyDepth     = "depth"
 	logKeyLinks     = "links"
 	logKeyCrawlerID = "crawler_id"
+	logKeyError     = "error"
+
+	// serverErrorThreshold is the HTTP status code at and above which
+	// responses are considered transient server errors eligible for retry.
+	serverErrorThreshold = 500
 )
