@@ -3,14 +3,16 @@ package fileutil
 import (
 	"bytes"
 	"os"
+	"strings"
 	"testing"
 	"time"
 
 	"github.com/tristan-hyams/anansi/weaver"
 )
 
-func TestWriteOutputFiles_CreatesFiles(t *testing.T) {
-	// Run in a temp directory to avoid polluting the project.
+// chdirTemp changes to a temp directory and restores on cleanup.
+func chdirTemp(t *testing.T) {
+	t.Helper()
 	dir := t.TempDir()
 	origDir, err := os.Getwd()
 	if err != nil {
@@ -20,6 +22,10 @@ func TestWriteOutputFiles_CreatesFiles(t *testing.T) {
 		t.Fatalf("chdir: %v", err)
 	}
 	t.Cleanup(func() { _ = os.Chdir(origDir) })
+}
+
+func TestWriteOutputFiles_CreatesFiles(t *testing.T) {
+	chdirTemp(t)
 
 	web := &weaver.Web{
 		Visited:   1,
@@ -39,49 +45,21 @@ func TestWriteOutputFiles_CreatesFiles(t *testing.T) {
 		t.Fatalf("WriteOutputFiles failed: %v", err)
 	}
 
-	// Check markdown file exists and has content.
-	md, err := os.ReadFile(outputResultsFile)
-	if err != nil {
-		t.Fatalf("reading %s: %v", outputResultsFile, err)
-	}
-	if len(md) == 0 {
-		t.Fatal("markdown file is empty")
-	}
-
-	// Check JSON file exists and is valid JSON.
-	js, err := os.ReadFile(outputJSONFile)
-	if err != nil {
-		t.Fatalf("reading %s: %v", outputJSONFile, err)
-	}
-	if len(js) == 0 {
-		t.Fatal("JSON file is empty")
-	}
+	assertFileNotEmpty(t, outputResultsFile)
+	assertFileNotEmpty(t, outputJSONFile)
 
 	// No errors, so error file should not exist.
 	if _, err := os.Stat(outputErrorsFile); err == nil {
 		t.Fatal("error file should not exist when there are no errors")
 	}
 
-	// Status messages written to stderr.
 	out := stderr.String()
-	if !bytes.Contains([]byte(out), []byte("results written to")) {
-		t.Fatal("expected status message for results file")
-	}
-	if !bytes.Contains([]byte(out), []byte("json written to")) {
-		t.Fatal("expected status message for JSON file")
-	}
+	assertContains(t, out, "results written to")
+	assertContains(t, out, "json written to")
 }
 
 func TestWriteOutputFiles_CreatesErrorFile(t *testing.T) {
-	dir := t.TempDir()
-	origDir, err := os.Getwd()
-	if err != nil {
-		t.Fatalf("getwd: %v", err)
-	}
-	if err := os.Chdir(dir); err != nil {
-		t.Fatalf("chdir: %v", err)
-	}
-	t.Cleanup(func() { _ = os.Chdir(origDir) })
+	chdirTemp(t)
 
 	web := &weaver.Web{
 		Skipped:   1,
@@ -100,11 +78,23 @@ func TestWriteOutputFiles_CreatesErrorFile(t *testing.T) {
 		t.Fatalf("WriteOutputFiles failed: %v", err)
 	}
 
-	errData, err := os.ReadFile(outputErrorsFile)
+	assertFileNotEmpty(t, outputErrorsFile)
+}
+
+func assertFileNotEmpty(t *testing.T, path string) {
+	t.Helper()
+	data, err := os.ReadFile(path)
 	if err != nil {
-		t.Fatalf("reading %s: %v", outputErrorsFile, err)
+		t.Fatalf("reading %s: %v", path, err)
 	}
-	if len(errData) == 0 {
-		t.Fatal("error file is empty")
+	if len(data) == 0 {
+		t.Fatalf("%s is empty", path)
+	}
+}
+
+func assertContains(t *testing.T, s, substr string) {
+	t.Helper()
+	if !strings.Contains(s, substr) {
+		t.Fatalf("expected output to contain %q", substr)
 	}
 }

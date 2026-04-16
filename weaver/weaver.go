@@ -41,7 +41,10 @@ type Weaver struct {
 
 // NewWeaver creates a Weaver. Fetches robots.txt during construction.
 // If robots.txt fetch fails, the crawl continues with allow-all rules.
-func NewWeaver(ctx context.Context, cfg *WeaverConfig, origin *url.URL, logger *slog.Logger, output io.Writer) (*Weaver, error) {
+func NewWeaver(
+	ctx context.Context, cfg *WeaverConfig, origin *url.URL,
+	logger *slog.Logger, output io.Writer,
+) (*Weaver, error) {
 
 	if err := cfg.Validate(); err != nil {
 		return nil, fmt.Errorf("invalid config: %w", err)

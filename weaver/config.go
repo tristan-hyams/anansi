@@ -31,6 +31,10 @@ func (c *WeaverConfig) Validate() error {
 		return errors.New("rate must be greater than 0")
 	}
 
+	if c.MaxDepth < 0 {
+		return errors.New("max-depth cannot be negative (0 = unlimited)")
+	}
+
 	if c.Timeout <= 0 {
 		return errors.New("timeout must be greater than 0")
 	}

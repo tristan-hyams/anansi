@@ -104,13 +104,13 @@ https://crawlme.monzo.com/
   https://crawlme.monzo.com/products
 ```
 
-Disable with `-log-links=false` for quieter operation during development.
+Disable with `-log-links=false` for a much quieter operation during development.
 
-### Files (written after crawl)
+### Result Files (written after crawl)
 
 | File | Contents |
 |------|----------|
-| `crawl-results.md` | Spider banner, latency stats (P50/P95/P99), status codes, content-type breakdown, page list, sitemap tree |
+| `crawl-results.md` | Latency stats (P50/P95/P99), status codes, content-type breakdown, page list, sitemap tree |
 | `crawl-results.json` | Machine-readable JSON with per-page found links, pipeable to `jq` |
 | `crawl-errors.md` | Errors grouped by reason, each URL timestamped (only if errors occurred) |
 
@@ -122,11 +122,12 @@ Rendering is separated from the crawl orchestrator — the `fileutil` package co
 |----------|-----------|
 | Worker pool over goroutine-per-URL | Predictable resource usage, but requires tuning `-workers` for throughput |
 | Interface-based frontier | Swappable backend (Redis/RabbitMQ), but adds indirection for an in-memory-only implementation |
-| Strict subdomain matching | Safe interpretation of spec, but `www.` equivalence requires explicit opt-in |
+| Strict subdomain matching | Safe interpretation of spec, but aware of sub-sub domain *.*.*.company.com etc. issues. `www.` equivalence requires explicit opt-in |
 | Single shared rate limiter | Simple global throttle, but doesn't allow per-path or adaptive rate limiting |
 | Buffered channel as queue | Simple, fast, in-process — but no restart durability or distributed fanout |
 | robots.txt 403 as not found | Pragmatic for CDN hosts, but could mask genuine access restrictions |
 | Normalize before dedup | Prevents visiting `/About` and `/about` twice, but normalizer must be correct or the crawler misses pages |
+| Retry/Exponential Backoff | Definitely easily configurable and should be added for transient network issues. | 
 
 ## Rejected Patterns
 

@@ -30,7 +30,7 @@ func SkipIfNoIntegration(t *testing.T) {
 // findProjectRoot walks up from the current working directory looking
 // for .git to identify the repository root. We could do `go.mod` instead
 // but if we ended up with a mono-repo in the future, .git would be more reliable.
-// since you will have multiple go.mod files per pacakge.
+// since you will have multiple go.mod files per package.
 func findProjectRoot(t *testing.T) string {
 	t.Helper()
 

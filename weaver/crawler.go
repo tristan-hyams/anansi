@@ -95,10 +95,7 @@ func (c *Crawler) handleResponse(
 	w.logger.Debug("fetched", logKeyURL, pageURL, "status", resp.StatusCode)
 
 	if !isHTML(resp) {
-		w.logger.Debug("non-HTML content, skipping parse",
-			logKeyURL, pageURL,
-			"content_type", ct,
-		)
+		w.logger.Debug("non-HTML content, skipping parse", logKeyURL, pageURL, "content_type", ct)
 		w.recordPage(PageResult{
 			URL: pageURL, Depth: fu.Depth, Status: resp.StatusCode,
 			ContentType: ct, Duration: time.Since(start),
@@ -106,8 +103,7 @@ func (c *Crawler) handleResponse(
 		return
 	}
 
-	directives := robots.ParseXRobotsTag(resp.Header)
-	if !directives.ShouldFollow() {
+	if !robots.ParseXRobotsTag(resp.Header).ShouldFollow() {
 		w.logger.Info("X-Robots-Tag nofollow, skipping link extraction", logKeyURL, pageURL)
 		w.recordPage(PageResult{
 			URL: pageURL, Depth: fu.Depth, Status: resp.StatusCode,
@@ -116,20 +112,24 @@ func (c *Crawler) handleResponse(
 		return
 	}
 
+	c.extractAndEnqueue(ctx, fu, resp, pageURL, ct, start)
+}
+
+// extractAndEnqueue parses links from an HTML response, records the page
+// result, prints discovered links (if configured), and enqueues same-domain
+// URLs for further crawling.
+func (c *Crawler) extractAndEnqueue(
+	ctx context.Context, fu *frontier.FrontierURL, resp *http.Response,
+	pageURL string, ct string, start time.Time) {
+
+	w := c.weaver
+
 	links, err := parser.ExtractLinks(ctx, resp.Body)
 	if err != nil {
 		w.logger.Warn("link extraction failed", logKeyURL, pageURL, "error", err)
 	}
 
-	// Normalize raw hrefs to absolute URLs for display.
-	foundLinks := make([]string, 0, len(links))
-	for _, raw := range links {
-		normalized, nErr := normalizer.Normalize(fu.URL, raw)
-		if nErr != nil {
-			continue
-		}
-		foundLinks = append(foundLinks, normalized.String())
-	}
+	foundLinks := c.normalizeLinks(fu.URL, links)
 
 	if w.cfg.LogLinks {
 		w.logger.Info("crawled",
@@ -149,6 +149,20 @@ func (c *Crawler) handleResponse(
 	w.printPage(pr)
 
 	c.enqueueLinks(ctx, fu, links)
+}
+
+// normalizeLinks resolves raw hrefs to absolute URLs for display.
+// Unparseable hrefs are silently skipped.
+func (*Crawler) normalizeLinks(base *url.URL, hrefs []string) []string {
+	result := make([]string, 0, len(hrefs))
+	for _, raw := range hrefs {
+		normalized, err := normalizer.Normalize(base, raw)
+		if err != nil {
+			continue
+		}
+		result = append(result, normalized.String())
+	}
+	return result
 }
 
 // enqueueLinks normalizes, filters, and enqueues discovered hrefs.

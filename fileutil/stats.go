@@ -68,9 +68,9 @@ func computeLatency(durations []time.Duration) LatencyStats {
 
 	return LatencyStats{
 		Avg: total / time.Duration(n),
-		P50: durations[50*n/100],
-		P95: durations[min(95*n/100, n-1)],
-		P99: durations[min(99*n/100, n-1)],
+		P50: durations[pct50*n/pct100],
+		P95: durations[min(pct95*n/pct100, n-1)],
+		P99: durations[min(pct99*n/pct100, n-1)],
 		Min: durations[0],
 		Max: durations[n-1],
 	}
