@@ -34,12 +34,14 @@ make docker-run ARGS="-workers 50 -rate 10000 -max-depth 0 -log-links=false"
 anansi [flags] <url>
 
 Flags:
-  -workers int      Number of concurrent workers (default 1)
-  -rate float       Max requests per second (default 1)
-  -max-depth int    Maximum crawl depth, 0 for unlimited (default 1)
-  -timeout duration HTTP request timeout (default 30s)
-  -log-level string Log level: debug, info, warn, error (default "info")
-  -log-links        Print each visited URL and its links to stdout (default true)
+  -workers int         Number of concurrent workers (default 1)
+  -rate float          Max requests per second (default 1)
+  -max-depth int       Maximum crawl depth, 0 for unlimited (default 1)
+  -max-duration dur    Maximum crawl duration, 0 for unlimited (e.g. 60s, 5m)
+  -max-retries int     Max retry attempts for transient errors (default 2, -1 = disabled)
+  -timeout duration    HTTP request timeout (default 30s)
+  -log-level string    Log level: debug, info, warn, error (default "info")
+  -log-links           Print each visited URL and its links to stdout (default true)
 ```
 
 See [cmd/anansi/README.md](cmd/anansi/README.md) for full running examples (Make, Docker, binary).
@@ -71,17 +73,53 @@ Worker pool with a buffered channel as the work queue. Global token-bucket rate 
 
 For design decisions, trade-offs, and rationale, see [DESIGN.md](DESIGN.md).
 
+### Sample Output
+
+When running with `-log-links` (default), stdout shows each visited URL and its discovered links:
+
+```
+https://crawlme.monzo.com/
+  https://crawlme.monzo.com/blog.html
+  https://crawlme.monzo.com/products.html
+  https://crawlme.monzo.com/about.html
+  https://crawlme.monzo.com/contact.html
+
+https://crawlme.monzo.com/blog.html
+  https://crawlme.monzo.com/
+  https://crawlme.monzo.com/blog/1
+  https://crawlme.monzo.com/blog/2
+```
+
+Stderr shows structured JSON logs and a completion summary:
+
+```
+crawl complete: 42010 pages crawled, 1 skipped, 1m38.2s
+```
+
 ## Development
 
 ```bash
 make build       # Build binary to bin\anansi.exe
 make test        # Run tests with coverage
 make lint        # Run revive linter
+make bench       # Run benchmarks
 make tidy        # Run go mod tidy
 make clean       # Remove build artifacts
 ```
 
-Open with `anansi.code-workspace` for debugger (F5), revive linter, and lint-on-save.
+### Profiling
+
+pprof is available via the `ANANSI_DEBUG` environment variable:
+
+```bash
+ANANSI_DEBUG=1 make run ARGS="-workers 20 -rate 5000 -max-depth 0 -log-links=false"
+
+# In another terminal:
+go tool pprof http://localhost:6060/debug/pprof/profile?seconds=30
+go tool pprof http://localhost:6060/debug/pprof/heap
+```
+
+See [DESIGN.md](DESIGN.md) for profiling targets and benchmark methodology.
 
 ## Testing
 
@@ -89,6 +127,7 @@ See [TESTING.md](TESTING.md) for test strategy, integration tests, race detector
 
 ```bash
 make test
+make bench
 ```
 
 ## License

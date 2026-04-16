@@ -19,7 +19,9 @@ type AnansiConfig struct {
 	Timeout  time.Duration `json:"timeout"`
 	Origin   string        `json:"origin"`
 	LogLevel string        `json:"log_level"`
-	LogLinks bool          `json:"log_links"`
+	LogLinks    bool          `json:"log_links"`
+	MaxRetries  int           `json:"max_retries"`
+	MaxDuration time.Duration `json:"max_duration"`
 }
 
 // LoadConfigFromFile reads a JSON config file and returns an AnansiConfig.

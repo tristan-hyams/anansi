@@ -1,6 +1,9 @@
 package weaver
 
-import "errors"
+import (
+	"errors"
+	"time"
+)
 
 // errMaxDepth indicates a URL was skipped because it exceeded the configured max depth.
 var errMaxDepth = errors.New("max depth exceeded")
@@ -12,6 +15,10 @@ const (
 	// before logging a progress checkpoint. Keeps logs quiet during
 	// normal operation but gives visibility on long crawls.
 	defaultProgressInterval = 100
+
+	// Retry defaults for transient HTTP errors (connection reset, 5xx, timeout).
+	defaultMaxRetries = 2
+	baseRetryDelay    = 500 * time.Millisecond
 
 	logKeyURL       = "url"
 	logKeyDepth     = "depth"

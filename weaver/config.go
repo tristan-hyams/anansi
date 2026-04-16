@@ -17,8 +17,10 @@ type WeaverConfig struct {
 	Timeout          time.Duration
 	BufferSize       int
 	UserAgent        string
-	ProgressInterval int  // URLs processed before each crawler logs a progress checkpoint. 0 uses default (100).
-	LogLinks         bool // Print each visited URL and its discovered links to the output writer.
+	ProgressInterval int           // URLs processed before each crawler logs a progress checkpoint. 0 uses default (100).
+	LogLinks         bool          // Print each visited URL and its discovered links to the output writer.
+	MaxRetries       int           // Max retry attempts for transient HTTP errors. 0 uses default (2). -1 disables retries.
+	MaxDuration      time.Duration // Max crawl duration. 0 = unlimited.
 }
 
 // Validate checks that Config values are sane.
@@ -45,6 +47,10 @@ func (c *WeaverConfig) Validate() error {
 
 	if c.ProgressInterval <= 0 {
 		c.ProgressInterval = defaultProgressInterval
+	}
+
+	if c.MaxRetries == 0 {
+		c.MaxRetries = defaultMaxRetries
 	}
 
 	return nil

@@ -22,6 +22,8 @@ func ParseFlags() (*AnansiConfig, error) {
 	timeout := flag.Duration("timeout", defaultTimeout, "HTTP request timeout")
 	logLevel := flag.String("log-level", defaultLogLevel, "log level (debug, info, warn, error)")
 	logLinks := flag.Bool("log-links", true, "print each visited URL and its links to stdout")
+	maxRetries := flag.Int("max-retries", defaultMaxRetries, "max retry attempts for transient HTTP errors (-1 = disabled)")
+	maxDuration := flag.Duration("max-duration", 0, "max crawl duration (0 = unlimited, e.g. 60s, 5m)")
 
 	flag.Usage = func() {
 		_, _ = fmt.Fprint(os.Stderr, "Usage: anansi [flags] <url>\n\nFlags:\n")
@@ -43,7 +45,9 @@ func ParseFlags() (*AnansiConfig, error) {
 		Timeout:  *timeout,
 		Origin:   flag.Arg(0),
 		LogLevel: *logLevel,
-		LogLinks: *logLinks,
+		LogLinks:    *logLinks,
+		MaxRetries:  *maxRetries,
+		MaxDuration: *maxDuration,
 	}
 
 	if _, err := cfg.OriginURL(); err != nil {

@@ -195,19 +195,65 @@ func (c *Crawler) enqueueLinks(ctx context.Context, parent *frontier.FrontierURL
 	}
 }
 
-// fetchPage performs an HTTP GET with the Weaver's User-Agent.
+// fetchPage performs an HTTP GET with retry on transient errors.
+// Transient: connection reset, timeout, 5xx. Non-retryable: 4xx, context cancelled.
 func (c *Crawler) fetchPage(ctx context.Context, u *url.URL) (*http.Response, error) {
+	maxAttempts := c.weaver.cfg.MaxRetries + 1
+	if maxAttempts < 1 {
+		maxAttempts = 1 // MaxRetries=-1 means no retries, 1 attempt
+	}
 
+	var lastErr error
+	for attempt := range maxAttempts {
+		resp, err := c.doRequest(ctx, u)
+
+		if err == nil && resp.StatusCode < 500 {
+			return resp, nil
+		}
+
+		// Close body on 5xx before retrying to avoid resource leak.
+		if resp != nil {
+			resp.Body.Close()
+			lastErr = fmt.Errorf("HTTP %d from %s", resp.StatusCode, u)
+		} else {
+			lastErr = err
+		}
+
+		// Don't retry if context is done or this was the last attempt.
+		if ctx.Err() != nil || attempt == maxAttempts-1 {
+			break
+		}
+
+		delay := baseRetryDelay << attempt // 500ms, 1s, 2s, ...
+		c.weaver.logger.Warn("retrying transient error",
+			logKeyURL, u.String(),
+			"attempt", attempt+1,
+			"delay", delay,
+			"error", lastErr,
+		)
+
+		select {
+		case <-time.After(delay):
+		case <-ctx.Done():
+			return nil, ctx.Err()
+		}
+	}
+
+	return nil, fmt.Errorf("fetching %s after %d attempts: %w", u, maxAttempts, lastErr)
+}
+
+// doRequest executes a single HTTP GET.
+func (c *Crawler) doRequest(ctx context.Context, u *url.URL) (*http.Response, error) {
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, u.String(), nil)
 	if err != nil {
-		return nil, fmt.Errorf("building request for %s: %w", u.String(), err)
+		return nil, fmt.Errorf("building request for %s: %w", u, err)
 	}
 
 	req.Header.Set("User-Agent", c.weaver.cfg.UserAgent)
 
 	resp, err := c.client.Do(req)
 	if err != nil {
-		return nil, fmt.Errorf("fetching %s: %w", u.String(), err)
+		return nil, fmt.Errorf("fetching %s: %w", u, err)
 	}
 
 	return resp, nil

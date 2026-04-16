@@ -140,6 +140,131 @@ Rendering is separated from the crawl orchestrator — the `fileutil` package co
 | `internal/` packages | Packages are public by design — reusable as library imports |
 | Docker Compose / multi-service | Single static binary. Dockerfile is for reviewer convenience |
 
+## Profiling & Benchmarks
+
+With more time, the following profiling and benchmarking infrastructure would be added. This section documents the approach and what each technique would target.
+
+### pprof
+
+Go's `net/http/pprof` package provides runtime profiling with zero application code changes beyond registering the HTTP handlers. In a production crawler, a debug HTTP server would run alongside the crawl on a separate port:
+
+```go
+go func() {
+    // Debug server — pprof endpoints at /debug/pprof/
+    log.Println(http.ListenAndServe("localhost:6060", nil))
+}()
+```
+
+This exposes CPU profiles, heap snapshots, goroutine dumps, and block/mutex contention profiles — all queryable live during a crawl.
+
+**What to profile and why:**
+
+| Profile | Target | What it reveals |
+|---------|--------|-----------------|
+| CPU (`/debug/pprof/profile`) | `normalizer.Normalize`, `parser.ExtractLinks` | These run on every page. URL normalization involves `net/url.Parse`, `strings.ToLower`, `net.SplitHostPort` — many small allocations. The HTML tokenizer walks every byte. CPU profiling reveals whether the hot path is in our code or the standard library. |
+| Heap (`/debug/pprof/heap`) | `frontier.InMemory`, `weaver.pages` | The visited `sync.Map` and the `[]PageResult` slice grow monotonically with crawl size. At 42k pages, each `PageResult` holds a URL string, found links slice, content-type string, and timestamps. Heap profiling quantifies actual memory per page and identifies whether the `FoundLinks []string` field (normalized URLs for display) is the dominant allocation. |
+| Goroutine (`/debug/pprof/goroutine`) | Worker pool lifecycle | With N workers, we expect exactly N+2 goroutines during crawl (N crawlers + 1 monitor + 1 main). A goroutine dump during a stall would immediately reveal whether crawlers are blocked on the rate limiter, the frontier channel, or HTTP I/O. |
+| Mutex (`/debug/pprof/mutex`) | `weaver.mu`, `weaver.outputMu` | Two mutexes protect shared state — one for the pages slice, one for stdout printing. Under high worker counts (50+), mutex contention could become measurable. Mutex profiling reveals whether the lock hold time justifies the separate-mutex design or whether a lock-free approach (e.g., per-worker result channels) would help. |
+| Block (`/debug/pprof/block`) | `frontier.Dequeue`, `rate.Limiter.Wait` | Block profiling shows where goroutines spend time waiting. Expected: most blocking time in `Dequeue` (waiting for work) and `limiter.Wait` (rate limiting). Unexpected blocking in `recordPage` or `printPage` would signal contention. |
+
+**Investigation workflow:**
+
+```bash
+# Start a crawl with pprof enabled
+bin/anansi -workers 20 -rate 5000 -max-depth 0 https://crawlme.monzo.com/
+
+# In another terminal — capture a 30-second CPU profile mid-crawl
+go tool pprof http://localhost:6060/debug/pprof/profile?seconds=30
+
+# Heap snapshot — shows live allocations
+go tool pprof http://localhost:6060/debug/pprof/heap
+
+# Goroutine dump — verify worker count, find stuck goroutines
+curl http://localhost:6060/debug/pprof/goroutine?debug=2
+```
+
+The CPU profile would generate a flame graph showing time distribution across the page fetch pipeline: HTTP I/O, HTML tokenizing, URL normalization, frontier operations, and mutex contention.
+
+### Benchmarks
+
+Benchmarks would target the hot-path functions — the code that runs per-page or per-link during a crawl. With 42,000 pages averaging 10+ links each, these functions execute hundreds of thousands of times.
+
+**Pure function benchmarks (no I/O):**
+
+| Benchmark | Function | Why it matters |
+|-----------|----------|----------------|
+| `BenchmarkNormalize` | `normalizer.Normalize` | Called once per discovered link. Involves `url.Parse`, `ResolveReference`, `strings.ToLower`, `net.SplitHostPort`. At 10 links/page across 42k pages, this runs ~420k times per crawl. |
+| `BenchmarkIsSameHost` | `normalizer.IsSameHost` | Called once per normalized link. String comparison after lowercasing and port stripping. |
+| `BenchmarkExtractLinks` | `parser.ExtractLinks` | HTML tokenizer loop — sequential I/O bound. Benchmark with varying HTML sizes (1KB, 10KB, 100KB) to establish the relationship between page size and extraction time. |
+| `BenchmarkParseXRobotsTag` | `robots.ParseXRobotsTag` | Called once per HTTP response. String splitting and directive parsing. Should be sub-microsecond. |
+| `BenchmarkComputeStats` | `fileutil.ComputeStats` | Runs once at crawl end. With 42k PageResults, this sorts durations and iterates the full slice. Benchmark with 1k, 10k, 100k results to verify linear scaling. |
+
+**Example benchmark implementation:**
+
+```go
+func BenchmarkNormalize(b *testing.B) {
+    base, _ := url.Parse("https://crawlme.monzo.com/blog/")
+    hrefs := []string{
+        "/about",
+        "../products/123",
+        "https://crawlme.monzo.com/contact",
+        "#section",
+        "page?q=search&page=2",
+    }
+    b.ResetTimer()
+    for i := 0; i < b.N; i++ {
+        normalizer.Normalize(base, hrefs[i%len(hrefs)])
+    }
+}
+
+func BenchmarkExtractLinks(b *testing.B) {
+    html := loadTestHTML(b, "testdata/large_page.html") // 50KB page with 100 links
+    b.ResetTimer()
+    for i := 0; i < b.N; i++ {
+        parser.ExtractLinks(context.Background(), bytes.NewReader(html))
+    }
+}
+```
+
+**Concurrency benchmarks:**
+
+| Benchmark | Target | What it measures |
+|-----------|--------|------------------|
+| `BenchmarkFrontierEnqueue` | `frontier.Enqueue` with contention | N goroutines enqueueing simultaneously. Measures `sync.Map.LoadOrStore` and channel send throughput under contention. |
+| `BenchmarkFrontierDequeueEnqueue` | Producer-consumer throughput | Simulates the crawl loop — M producers enqueueing, N consumers dequeuing. Measures overall frontier throughput independent of network I/O. |
+| `BenchmarkRecordPage` | `weaver.recordPage` with contention | N goroutines appending PageResults concurrently. Measures mutex overhead on the shared pages slice. |
+
+**Integration benchmark (httptest):**
+
+A `BenchmarkWeave` using `httptest.NewServer` with a canned site of 100-1000 pages would measure end-to-end throughput without network variability. This isolates the crawler's overhead from server latency:
+
+```go
+func BenchmarkWeave_100Pages(b *testing.B) {
+    srv := newCannedSite(100) // httptest server with 100 interlinked pages
+    defer srv.Close()
+    b.ResetTimer()
+    for i := 0; i < b.N; i++ {
+        wv, _ := weaver.NewWeaver(ctx, cfg, origin, logger, io.Discard)
+        wv.Weave(ctx)
+    }
+}
+```
+
+**What the numbers would tell us:**
+
+From the live crawl data (42,011 pages, 20 workers, 51.6s):
+- **Actual throughput:** ~814 pages/sec (server-limited, not crawler-limited)
+- **Per-page overhead estimate:** If the server responded instantly, how fast could the crawler process? The benchmark suite would answer this by removing network latency from the equation.
+- **Scaling characteristics:** Does doubling workers double throughput? At what worker count does mutex contention become the bottleneck? The concurrency benchmarks would establish these inflection points.
+
+### Memory profiling considerations
+
+The current design stores all `PageResult` data in memory until the crawl completes. At 42k pages with `FoundLinks` populated, this is the dominant memory consumer. Profiling would quantify:
+
+- **Per-page memory cost:** `PageResult` struct + URL string + `FoundLinks` slice + content-type string
+- **Total working set:** For a 42k page crawl, expected to be in the tens of MB range
+- **Growth curve:** Linear with page count. A streaming output approach (writing results as they arrive rather than buffering) would cap memory at O(workers) instead of O(pages), at the cost of more complex I/O coordination.
+
 ## Known Limitations
 
 - **JavaScript-rendered content (SPAs):** Processes server-rendered HTML only. JS-rendered content would require a headless browser.

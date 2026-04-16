@@ -98,7 +98,13 @@ func (w *Weaver) Weave(ctx context.Context) (*Web, error) {
 	start := time.Now()
 	w.logger.Info("crawl started", "origin", w.origin.String(), "workers", w.cfg.Workers)
 
-	crawlCtx, crawlCancel := context.WithCancel(ctx)
+	var crawlCtx context.Context
+	var crawlCancel context.CancelFunc
+	if w.cfg.MaxDuration > 0 {
+		crawlCtx, crawlCancel = context.WithTimeout(ctx, w.cfg.MaxDuration)
+	} else {
+		crawlCtx, crawlCancel = context.WithCancel(ctx)
+	}
 	defer crawlCancel()
 
 	var wg sync.WaitGroup

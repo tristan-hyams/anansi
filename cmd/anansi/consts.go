@@ -7,7 +7,8 @@ const (
 	defaultRate     = 1.0
 	defaultMaxDepth = 1
 	defaultTimeout  = 30 * time.Second
-	defaultLogLevel = "info"
+	defaultLogLevel  = "info"
+	defaultMaxRetries = 2
 
 	errFmt         = "anansi: %v\n"
 	exitCodeError  = 1

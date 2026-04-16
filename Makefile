@@ -1,6 +1,6 @@
 # Apologies for any failed commands. This Makefile was built on Windows.
 
-.PHONY: build test lint run clean tidy update setup docker docker-run
+.PHONY: build test lint bench run clean tidy update setup docker docker-run
 
 BINARY  := bin\anansi.exe
 URL     ?= https://crawlme.monzo.com/
@@ -16,6 +16,9 @@ test:
 
 lint:
 	revive -config revive.toml ./...
+
+bench:
+	go test -bench=. -benchmem ./benchmark/...
 
 run: build
 	$(BINARY) $(ARGS) $(URL)

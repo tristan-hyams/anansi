@@ -3,6 +3,8 @@ package main
 import (
 	"fmt"
 	"io"
+	"net/http"
+	_ "net/http/pprof" //nolint:revive // Blank import registers pprof handlers.
 	"os"
 
 	"github.com/tristan-hyams/anansi/fileutil"
@@ -18,6 +20,15 @@ func main() {
 	}
 
 	logger := SetupLogger(cfg)
+
+	if os.Getenv("ANANSI_DEBUG") != "" {
+		go func() {
+			addr := "localhost:6060"
+			logger.Info("pprof debug server started", "addr", addr)
+			_ = http.ListenAndServe(addr, nil) //nolint:revive // Debug server, best-effort.
+		}()
+	}
+
 	ctx, cancel := SetupSignalContext()
 	defer cancel()
 
@@ -28,12 +39,14 @@ func main() {
 	}
 
 	weaverCfg := &weaver.WeaverConfig{
-		Workers:   cfg.Workers,
-		Rate:      cfg.Rate,
-		MaxDepth:  cfg.MaxDepth,
-		Timeout:   cfg.Timeout,
-		UserAgent: "Anansi",
-		LogLinks:  cfg.LogLinks,
+		Workers:     cfg.Workers,
+		Rate:        cfg.Rate,
+		MaxDepth:    cfg.MaxDepth,
+		Timeout:     cfg.Timeout,
+		UserAgent:   "Anansi",
+		LogLinks:    cfg.LogLinks,
+		MaxRetries:  cfg.MaxRetries,
+		MaxDuration: cfg.MaxDuration,
 	}
 
 	var output io.Writer = os.Stdout
