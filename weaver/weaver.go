@@ -114,9 +114,7 @@ func (w *Weaver) Weave(ctx context.Context) (*Web, error) {
 		})
 	}
 
-	go func() {
-		w.monitorCompletion(crawlCtx, crawlCancel)
-	}()
+	go w.monitorCompletion(crawlCtx, crawlCancel)
 
 	wg.Wait()
 
@@ -129,11 +127,14 @@ func (w *Weaver) Weave(ctx context.Context) (*Web, error) {
 // calls Done() after fully processing a URL. When pending reaches 0,
 // every discovered URL has been processed and no new work was generated.
 func (w *Weaver) monitorCompletion(ctx context.Context, cancel context.CancelFunc) {
+	ticker := time.NewTicker(monitorInterval)
+	defer ticker.Stop()
+
 	for {
 		select {
 		case <-ctx.Done():
 			return
-		case <-time.After(50 * time.Millisecond):
+		case <-ticker.C:
 			if w.front.IsDone() {
 				cancel()
 				return

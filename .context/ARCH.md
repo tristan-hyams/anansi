@@ -138,7 +138,7 @@ Example from crawlme.monzo.com: `X-Robots-Tag: noindex,follow` - don't index, bu
 | Persistent queue (RabbitMQ/Redis) | Interface only | In-memory impl for take-home. Interface enables swap. |
 | Distributed crawling | Not implemented | Single-process design. Architecture supports future sharding via frontier partitioning. |
 | Sitemap.xml parsing | Not implemented | Spec doesn't require it. Would be a complementary URL discovery source. |
-| Depth limiting | Configurable | Default uncapped. Flag `--max-depth` available. Dedup via seen-set prevents infinite loops regardless. |
+| Depth limiting | Configurable | Default 1 (origin + direct links). Flag `--max-depth` available (0 = unlimited). Dedup via seen-set prevents infinite loops regardless. |
 | Duration limiting | Configurable | Flag `--max-duration`. 0 = unlimited. Prevents runaway crawls against infinite/procedurally-generated sites. |
 
 ---

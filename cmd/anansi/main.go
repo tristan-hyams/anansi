@@ -29,16 +29,15 @@ func main() {
 		os.Exit(exitCodeError)
 	}
 
-	weaverCfg := &weaver.WeaverConfig{
+	weaverCfg := weaver.NewWeaverConfig(weaver.WeaverConfig{
 		Workers:     cfg.Workers,
 		Rate:        cfg.Rate,
 		MaxDepth:    cfg.MaxDepth,
 		Timeout:     cfg.Timeout,
-		UserAgent:   "Anansi",
 		LogLinks:    cfg.LogLinks,
 		MaxRetries:  cfg.MaxRetries,
 		MaxDuration: cfg.MaxDuration,
-	}
+	})
 
 	var output io.Writer = os.Stdout
 	if !cfg.LogLinks {

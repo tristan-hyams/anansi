@@ -17,19 +17,37 @@ type WeaverConfig struct {
 	Timeout          time.Duration
 	BufferSize       int
 	UserAgent        string
-	ProgressInterval int  // URLs between progress checkpoints. 0 uses default (100).
-	LogLinks         bool // Print visited URLs and links to stdout.
-	MaxRetries       int  // Retry attempts for transient errors. 0=default(2), -1=off.
+	ProgressInterval int           // URLs between progress checkpoints. NewWeaverConfig defaults to 100.
+	LogLinks         bool          // Print visited URLs and links to stdout.
+	MaxRetries       int           // Retry attempts for transient errors. NewWeaverConfig defaults 0→2, -1=off.
 	MaxDuration      time.Duration // Max crawl duration. 0 = unlimited.
 }
 
-// Validate checks that Config values are sane.
+// NewWeaverConfig creates a WeaverConfig with defaults applied for
+// zero-value optional fields. Call Validate() after to check for errors.
+func NewWeaverConfig(c WeaverConfig) *WeaverConfig {
+	if c.UserAgent == "" {
+		c.UserAgent = defaultUserAgent
+	}
+
+	if c.ProgressInterval <= 0 {
+		c.ProgressInterval = defaultProgressInterval
+	}
+
+	if c.MaxRetries == 0 {
+		c.MaxRetries = defaultMaxRetries
+	}
+
+	return &c
+}
+
+// Validate checks that Config values are sane. Does not mutate the receiver.
 func (c *WeaverConfig) Validate() error {
 	if c.Workers < 1 {
 		return errors.New("workers must be at least 1")
 	}
 
-	if c.Rate < 1 {
+	if c.Rate <= 0 {
 		return errors.New("rate must be greater than 0")
 	}
 
@@ -42,15 +60,11 @@ func (c *WeaverConfig) Validate() error {
 	}
 
 	if c.UserAgent == "" {
-		c.UserAgent = defaultUserAgent
+		return errors.New("user agent must not be empty")
 	}
 
 	if c.ProgressInterval <= 0 {
-		c.ProgressInterval = defaultProgressInterval
-	}
-
-	if c.MaxRetries == 0 {
-		c.MaxRetries = defaultMaxRetries
+		return errors.New("progress interval must be greater than 0")
 	}
 
 	return nil

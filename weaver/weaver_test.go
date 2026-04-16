@@ -23,13 +23,13 @@ func testLogger() *slog.Logger {
 }
 
 func testConfig() *weaver.WeaverConfig {
-	return &weaver.WeaverConfig{
+	return weaver.NewWeaverConfig(weaver.WeaverConfig{
 		Workers:   2,
 		Rate:      100,
 		MaxDepth:  0,
 		Timeout:   5 * time.Second,
 		UserAgent: "AnansiTest",
-	}
+	})
 }
 
 func mustParseURL(t *testing.T, raw string) *url.URL {

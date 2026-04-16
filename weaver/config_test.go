@@ -6,12 +6,12 @@ import (
 )
 
 func validConfig() *WeaverConfig {
-	return &WeaverConfig{
-		Workers: 2,
-		Rate:    5.0,
+	return NewWeaverConfig(WeaverConfig{
+		Workers:  2,
+		Rate:     5.0,
 		MaxDepth: 3,
-		Timeout: 10 * time.Second,
-	}
+		Timeout:  10 * time.Second,
+	})
 }
 
 func TestValidate_HappyPath(t *testing.T) {
@@ -85,46 +85,72 @@ func TestValidate_TimeoutNegative(t *testing.T) {
 	}
 }
 
-func TestValidate_DefaultsUserAgent(t *testing.T) {
+func TestValidate_EmptyUserAgent(t *testing.T) {
 	cfg := validConfig()
 	cfg.UserAgent = ""
-	if err := cfg.Validate(); err != nil {
-		t.Fatalf("unexpected error: %v", err)
+	if err := cfg.Validate(); err == nil {
+		t.Fatal("expected error for empty user agent")
 	}
+}
+
+func TestValidate_ZeroProgressInterval(t *testing.T) {
+	cfg := validConfig()
+	cfg.ProgressInterval = 0
+	if err := cfg.Validate(); err == nil {
+		t.Fatal("expected error for progress interval=0")
+	}
+}
+
+func TestNewWeaverConfig_DefaultsUserAgent(t *testing.T) {
+	cfg := NewWeaverConfig(WeaverConfig{
+		Workers: 1, Rate: 1, Timeout: 5 * time.Second,
+	})
 	if cfg.UserAgent != defaultUserAgent {
 		t.Fatalf("expected default user agent %q, got %q", defaultUserAgent, cfg.UserAgent)
 	}
 }
 
-func TestValidate_PreservesUserAgent(t *testing.T) {
-	cfg := validConfig()
-	cfg.UserAgent = "CustomBot"
-	if err := cfg.Validate(); err != nil {
-		t.Fatalf("unexpected error: %v", err)
-	}
+func TestNewWeaverConfig_PreservesUserAgent(t *testing.T) {
+	cfg := NewWeaverConfig(WeaverConfig{
+		Workers: 1, Rate: 1, Timeout: 5 * time.Second, UserAgent: "CustomBot",
+	})
 	if cfg.UserAgent != "CustomBot" {
 		t.Fatalf("expected CustomBot, got %q", cfg.UserAgent)
 	}
 }
 
-func TestValidate_DefaultsProgressInterval(t *testing.T) {
-	cfg := validConfig()
-	cfg.ProgressInterval = 0
-	if err := cfg.Validate(); err != nil {
-		t.Fatalf("unexpected error: %v", err)
-	}
+func TestNewWeaverConfig_DefaultsProgressInterval(t *testing.T) {
+	cfg := NewWeaverConfig(WeaverConfig{
+		Workers: 1, Rate: 1, Timeout: 5 * time.Second,
+	})
 	if cfg.ProgressInterval != defaultProgressInterval {
 		t.Fatalf("expected default progress interval %d, got %d", defaultProgressInterval, cfg.ProgressInterval)
 	}
 }
 
-func TestValidate_PreservesProgressInterval(t *testing.T) {
-	cfg := validConfig()
-	cfg.ProgressInterval = 500
-	if err := cfg.Validate(); err != nil {
-		t.Fatalf("unexpected error: %v", err)
-	}
+func TestNewWeaverConfig_PreservesProgressInterval(t *testing.T) {
+	cfg := NewWeaverConfig(WeaverConfig{
+		Workers: 1, Rate: 1, Timeout: 5 * time.Second, ProgressInterval: 500,
+	})
 	if cfg.ProgressInterval != 500 {
 		t.Fatalf("expected 500, got %d", cfg.ProgressInterval)
+	}
+}
+
+func TestNewWeaverConfig_DefaultsMaxRetries(t *testing.T) {
+	cfg := NewWeaverConfig(WeaverConfig{
+		Workers: 1, Rate: 1, Timeout: 5 * time.Second,
+	})
+	if cfg.MaxRetries != defaultMaxRetries {
+		t.Fatalf("expected default max retries %d, got %d", defaultMaxRetries, cfg.MaxRetries)
+	}
+}
+
+func TestNewWeaverConfig_PreservesMaxRetriesDisabled(t *testing.T) {
+	cfg := NewWeaverConfig(WeaverConfig{
+		Workers: 1, Rate: 1, Timeout: 5 * time.Second, MaxRetries: -1,
+	})
+	if cfg.MaxRetries != -1 {
+		t.Fatalf("expected -1 (disabled), got %d", cfg.MaxRetries)
 	}
 }

@@ -26,6 +26,10 @@ const (
 	logKeyCrawlerID = "crawler_id"
 	logKeyError     = "error"
 
+	// monitorInterval is how often the completion monitor checks the
+	// frontier's pending counter. Uses a ticker to avoid timer leaks.
+	monitorInterval = 50 * time.Millisecond
+
 	// serverErrorThreshold is the HTTP status code at and above which
 	// responses are considered transient server errors eligible for retry.
 	serverErrorThreshold = 500
