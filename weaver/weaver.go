@@ -14,6 +14,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/google/uuid"
 	"golang.org/x/time/rate"
 
 	"github.com/tristan-hyams/anansi/frontier"
@@ -74,6 +75,7 @@ func NewWeaver(ctx context.Context, cfg *WeaverConfig, origin *url.URL, logger *
 	wv.crawlers = make([]*Crawler, cfg.Workers)
 	for i := range cfg.Workers {
 		wv.crawlers[i] = &Crawler{
+			id:     uuid.New(),
 			weaver: wv,
 			client: webutil.NewClient(cfg.Timeout),
 		}
@@ -86,6 +88,7 @@ func NewWeaver(ctx context.Context, cfg *WeaverConfig, origin *url.URL, logger *
 func (w *Weaver) Weave(ctx context.Context) (*Web, error) {
 
 	start := time.Now()
+	w.logger.Info("crawl started", "origin", w.origin.String(), "workers", w.cfg.Workers)
 
 	crawlCtx, crawlCancel := context.WithCancel(ctx)
 	defer crawlCancel()

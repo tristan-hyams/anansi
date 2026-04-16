@@ -3,6 +3,7 @@ module github.com/tristan-hyams/anansi
 go 1.26.2
 
 require (
+	github.com/google/uuid v1.6.0
 	github.com/joho/godotenv v1.5.1
 	github.com/stretchr/testify v1.11.1
 	github.com/temoto/robotstxt v1.1.2

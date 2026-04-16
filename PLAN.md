@@ -7,10 +7,10 @@ Each phase produces tested, working code before the next begins.
 
 ## Phase 0 - Project Init
 
-- [ ] `go mod init github.com/tristan-hyams/anansi`
-- [ ] Create `Makefile` (build, test, lint, run, clean, docker, docker-run)
-- [ ] Create `Dockerfile` (multi-stage: golang:1.24-alpine → alpine)
-- [ ] Verify `make build` and `make docker` work with a stub `cmd/anansi/main.go`
+- [x] `go mod init github.com/tristan-hyams/anansi`
+- [x] Create `Makefile` (build, test, lint, run, clean, docker, docker-run)
+- [x] Create `Dockerfile` (multi-stage: golang:1.26-alpine → alpine)
+- [x] Verify `make build` and `make docker` work with a stub `cmd/anansi/main.go`
 
 **Exit criteria:** `make build` produces a binary. `make docker` produces an image. `make test` passes (no tests yet, but no errors).
 
@@ -20,7 +20,7 @@ Each phase produces tested, working code before the next begins.
 
 URL canonicalization. Pure functions, zero dependencies, highest test density.
 
-- [ ] `normalizer/normalizer.go`
+- [x] `normalizer/normalizer.go`
   - `Normalize(base *url.URL, raw string) (*url.URL, error)`
   - Strip fragments (`#section`)
   - Lowercase scheme and host
@@ -29,7 +29,7 @@ URL canonicalization. Pure functions, zero dependencies, highest test density.
   - Consistent trailing slash handling
   - `IsSameHost(origin, candidate *url.URL) bool` - strict hostname match
   - `IsFollowableScheme(u *url.URL) bool` - only `http` and `https`
-- [ ] `normalizer/normalizer_test.go`
+- [x] `normalizer/normalizer_test.go`
   - Table-driven tests: 15+ cases covering every transform
   - Edge cases: empty href, `#`-only, `javascript:void(0)`, `mailto:`, protocol-relative `//cdn.example.com`, query params, encoded characters
 
@@ -41,18 +41,18 @@ URL canonicalization. Pure functions, zero dependencies, highest test density.
 
 HTML link extraction. Depends on nothing internal. Uses `golang.org/x/net/html` tokenizer.
 
-- [ ] `parser/parser.go`
+- [x] `parser/parser.go`
   - `ExtractLinks(r io.Reader) ([]string, error)`
   - Tokenizer loop: scan for `<a>` start tags, extract `href` attribute
   - Return raw href strings - no filtering, no normalization (that's the caller's job)
-- [ ] `parser/parser_test.go`
+- [x] `parser/parser_test.go`
   - Well-formed HTML with multiple links
   - Malformed / unclosed tags (tokenizer should handle gracefully)
   - No `<a>` tags (empty result)
   - `<a>` without `href` attribute (skip)
   - Mixed content: `<a>`, `<link>`, `<script>` (only extract `<a>`)
   - Inline HTML entities in href values
-- [ ] `testdata/` HTML fixtures for parser tests
+- [x] `testdata/` HTML fixtures for parser tests
 
 **Exit criteria:** `make test` passes. Parser handles malformed HTML without panicking. Returns raw hrefs only.
 
@@ -62,7 +62,7 @@ HTML link extraction. Depends on nothing internal. Uses `golang.org/x/net/html` 
 
 URL queue + visited tracking. Interface-based for swappability.
 
-- [ ] `frontier/frontier.go`
+- [x] `frontier/frontier.go`
   - `Frontier` interface:
     ```go
     type Frontier interface {
@@ -76,7 +76,7 @@ URL queue + visited tracking. Interface-based for swappability.
     - Buffered channel as queue (configurable buffer size)
     - `sync.Map` for visited set
     - Key is normalized URL string (scheme + host + path + query, no fragment)
-- [ ] `frontier/frontier_test.go`
+- [x] `frontier/frontier_test.go`
   - Enqueue/Dequeue ordering
   - Dedup: enqueue same URL twice, only dequeue once
   - IsVisited returns true after MarkVisited
@@ -91,12 +91,12 @@ URL queue + visited tracking. Interface-based for swappability.
 
 robots.txt compliance. Fetches and parses rules.
 
-- [ ] `robots/robots.go`
+- [x] `robots/robots.go`
   - `Fetch(ctx context.Context, client *http.Client, baseURL *url.URL) (*Rules, error)`
   - `Rules.IsAllowed(path string) bool`
   - Uses `github.com/temoto/robotstxt` for parsing
   - Graceful handling: 404 means allow all, network error means allow all (with warning log)
-- [ ] `robots/robots_test.go`
+- [x] `robots/robots_test.go`
   - Standard robots.txt with Disallow rules
   - Empty robots.txt (allow all)
   - 404 response (allow all)
@@ -144,7 +144,7 @@ Orchestrator. Wires everything together. This is the core.
 
 CLI entry point. Thin - all logic lives in packages.
 
-- [ ] `cmd/anansi/main.go`
+- [x] `cmd/anansi/main.go`
   - Flag parsing: `-workers`, `-rate`, `-max-depth`, `-timeout`
   - URL argument validation (positional arg, must parse as valid URL)
   - `slog` setup: JSON handler to stderr for structured logs, summary to stdout
@@ -178,6 +178,21 @@ CLI entry point. Thin - all logic lives in packages.
 - [ ] Update .context/journal with completion entry
 - [ ] Git: clean history, meaningful commits per phase
 
+---
+
+## Phase 8 - Post-submission improvements
+
+Completed after the initial implementation. Not part of the original plan.
+
+- [x] Extract rendering + file output into `fileutil` package (was on `weaver.Web` methods)
+- [x] Add UUID ID to each Crawler with start/stop lifecycle logging
+- [x] Record parse errors on `PageResult` (was silently logged)
+- [x] Remove dead `Status`/`Err` fields from `FrontierURL` + delete `enums.go`
+- [x] Add `webutil` unit tests (was 0% coverage)
+- [x] Fix `fmt.Sprintf` allocation in frontier debug log
+- [x] Pass `pageURL` as parameter to `handleResponse` (was computed twice)
+- [x] Add `fileutil` unit tests: stats, markdown, JSON, writer
+
 **Exit criteria:** Submission-ready. Clean lint, good coverage, working Docker, clear README, documented decisions.
 
 ---
@@ -206,9 +221,10 @@ Phases 1-4 are independent - can be built in any order or in parallel. Phase 5 i
 ## Key Dependencies (go.mod)
 
 ```
-golang.org/x/net       # HTML tokenizer (parser)
-golang.org/x/time      # rate.Limiter (crawler)
-github.com/temoto/robotstxt  # robots.txt parsing (robots)
+golang.org/x/net              # HTML tokenizer (parser)
+golang.org/x/time             # rate.Limiter (weaver)
+github.com/temoto/robotstxt   # robots.txt parsing (robots)
+github.com/google/uuid        # Crawler UUID IDs (weaver)
 ```
 
-No other external dependencies. Standard library for everything else.
+Minimal dependency footprint. Standard library for everything else.

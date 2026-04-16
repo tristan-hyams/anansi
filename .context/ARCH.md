@@ -29,9 +29,9 @@ Built as a take-home challenge demonstrating: concurrency design, software struc
 ```
 
 - **Buffered channel** acts as the work queue. Buffer size defaults to 100,000 - the visited set (not the channel) is the real bound on growth. Dedup is built into Enqueue via `sync.Map`.
-- **`FrontierURL`** wraps each URL with crawl metadata: depth, status, content-type, and error state. Depth is set by the Weaver at enqueue time.
+- **`FrontierURL`** wraps each URL with crawl depth. Depth is set by the Weaver at enqueue time.
 - **Pending counter** (`atomic.Int32` in frontier) tracks work: incremented on `Enqueue`, decremented via `Done()` after processing. `IsDone()` checks `pending <= 0 AND queue empty` for deterministic completion detection.
-- **`sync.WaitGroup`** in `Weaver.Weave()` tracks Crawler goroutines. Pre-created Crawlers are launched via `wg.Go()`.
+- **`sync.WaitGroup`** in `Weaver.Weave()` tracks Crawler goroutines. Pre-created Crawlers are launched via `wg.Go()`. Each Crawler has a UUID ID and logs start/stop events for lifecycle visibility.
 - **`golang.org/x/time/rate` token bucket** enforces global rate limiting (default: 1 req/s). All Crawlers draw a token before making HTTP requests. Respects `Crawl-delay` from robots.txt if stricter.
 - **`signal.NotifyContext`** for graceful shutdown on SIGINT/SIGTERM. Cancels context, Crawlers drain, frontier select cases unblock via ctx.Done().
 
@@ -65,7 +65,7 @@ Dequeue URL from frontier
   │
   ├─ Check X-Robots-Tag header ──► if nofollow or none, skip link extraction
   │
-  ├─ Parse HTML for <a href> links
+  ├─ Parse HTML for <a href> links (parse errors recorded on PageResult)
   │
   └─ For each discovered href:
        │
@@ -138,3 +138,11 @@ Example from crawlme.monzo.com: `X-Robots-Tag: noindex,follow` — don't index, 
 | Distributed crawling | Not implemented | Single-process design. Architecture supports future sharding via frontier partitioning. |
 | Sitemap.xml parsing | Not implemented | Spec doesn't require it. Would be a complementary URL discovery source. |
 | Depth limiting | Configurable | Default uncapped. Flag `--max-depth` available. Dedup via seen-set prevents infinite loops regardless. |
+
+---
+
+## Output Rendering
+
+Crawl results (`Web` struct) are plain data. All rendering — markdown summary, JSON output, error logs, statistics — lives in the `fileutil` package, not in the weaver. This separation keeps the orchestrator focused on crawling and makes output formats independently testable.
+
+Output files are written by `fileutil.WriteOutputFiles()`, called from the CLI after the crawl completes.

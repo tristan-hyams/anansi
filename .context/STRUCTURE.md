@@ -15,7 +15,8 @@ Top-level packages are public - importable as libraries by external consumers.
 ## Dependency Direction
 
 ```
-cmd/anansi (main) → weaver → (frontier, parser, normalizer, robots, webutil)
+cmd/anansi (main) → fileutil → weaver → (frontier, parser, normalizer, robots, webutil)
+cmd/anansi (main) → weaver (for WeaverConfig, NewWeaver, Weave)
 ```
 
 `weaver` is the orchestrator. All other packages are leaf dependencies with no cross-imports between them (except `robots` → `webutil` for HTTP client creation).
@@ -38,14 +39,23 @@ anansi/
 │   ├── weaver.go                # Weaver struct, NewWeaver(), Weave(), monitor
 │   ├── crawler.go               # Crawler struct, page fetch pipeline
 │   ├── config.go                # WeaverConfig with Validate(), CrawlRate()
-│   ├── result.go                # Web struct with String(), ErrorLog(), PageResult
-│   ├── json.go                  # Web.JSON() — machine-readable output
-│   ├── stats.go                 # ComputeStats(), latency P50/P95/P99
-│   ├── consts.go                # Defaults, log keys, summary formatting, banner
+│   ├── result.go                # Web and PageResult — crawl result data structs
+│   ├── consts.go                # Defaults, log keys, error sentinels
 │   ├── weaver_test.go           # httptest integration tests
 │   └── weaver_integration_test.go # Live test against crawlme.monzo.com
+├── fileutil/
+│   ├── markdown.go              # RenderMarkdown(), RenderErrorLog(), sitemap tree
+│   ├── json.go                  # RenderJSON() — machine-readable JSON output
+│   ├── stats.go                 # ComputeStats(), Stats, LatencyStats, percentiles
+│   ├── writer.go                # WriteOutputFiles() — writes results/JSON/errors to disk
+│   ├── consts.go                # Banner, summary formatting, output filenames
+│   ├── stats_test.go            # ComputeStats, computeLatency tests
+│   ├── markdown_test.go         # RenderMarkdown, RenderErrorLog tests
+│   ├── json_test.go             # RenderJSON tests
+│   └── writer_test.go           # WriteOutputFiles tests
 ├── frontier/
 │   ├── frontier.go              # Frontier interface (7 methods), InMemory impl
+│   ├── frontierurl.go           # FrontierURL struct (URL + Depth)
 │   ├── frontier_test.go         # Queue, dedup, select behavior, pending, concurrency
 │   └── consts.go                # defaultBufferSize
 ├── normalizer/
@@ -65,6 +75,7 @@ anansi/
 │   └── consts.go                # userAgent, fetchTimeout, xRobotsTagHeader
 ├── webutil/
 │   ├── transport.go             # Singleton Transport(), NewClient()
+│   ├── transport_test.go        # Singleton and client tests
 │   └── consts.go                # Dial, TLS, pool, timeout settings
 ├── testutil/
 │   └── integration.go           # SkipIfNoIntegration helper, .env.test loader
@@ -97,9 +108,10 @@ anansi/
 
 | Package | Responsibility | Key Types |
 |---|---|---|
-| `cmd/anansi` | CLI entry point. Parses flags, wires weaver, writes output files. Only place that calls `os.Exit`. | `main()`, `AnansiConfig`, `ParseFlags()`, `OriginURL()` |
-| `weaver` | Orchestrates the crawl. Owns frontier, rate limiter, robots rules. Pre-creates Crawlers. | `Weaver`, `Crawler`, `WeaverConfig`, `Web`, `PageResult`, `Stats` |
-| `frontier` | URL queue + visited tracking + pending counter. Interface-based for swappability. | `Frontier` (7 methods), `InMemory`, `FrontierURL`, `Status` |
+| `cmd/anansi` | CLI entry point. Parses flags, wires weaver, delegates output to fileutil. Only place that calls `os.Exit`. | `main()`, `AnansiConfig`, `ParseFlags()`, `OriginURL()` |
+| `weaver` | Orchestrates the crawl. Owns frontier, rate limiter, robots rules. Pre-creates Crawlers. | `Weaver`, `Crawler`, `WeaverConfig`, `Web`, `PageResult` |
+| `fileutil` | Rendering and file output. Converts `Web` results to markdown, JSON, error logs. Writes output files. | `RenderMarkdown()`, `RenderJSON()`, `RenderErrorLog()`, `ComputeStats()`, `WriteOutputFiles()` |
+| `frontier` | URL queue + visited tracking + pending counter. Interface-based for swappability. | `Frontier` (7 methods), `InMemory`, `FrontierURL` |
 | `parser` | Extracts `<a href>` links from HTML using tokenizer. No URL filtering — returns raw hrefs. | `ExtractLinks(ctx, r io.Reader) ([]string, error)` |
 | `normalizer` | Canonicalizes URLs: strips fragments, lowercases host, resolves relative paths. Pure functions. | `Normalize(base, raw)`, `IsSameHost(origin, candidate)`, `IsFollowableScheme(u)` |
 | `robots` | robots.txt + X-Robots-Tag compliance. Creates own HTTP client via webutil. | `Fetch(ctx, baseURL, logger)`, `Rules`, `IsAllowed()`, `Directives`, `ParseXRobotsTag()` |

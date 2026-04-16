@@ -11,12 +11,13 @@ import (
 
 // WeaverConfig holds crawler-specific configuration, decoupled from CLI flags.
 type WeaverConfig struct {
-	Workers    int
-	Rate       float64
-	MaxDepth   int
-	Timeout    time.Duration
-	BufferSize int
-	UserAgent  string
+	Workers          int
+	Rate             float64
+	MaxDepth         int
+	Timeout          time.Duration
+	BufferSize       int
+	UserAgent        string
+	ProgressInterval int // URLs processed before each crawler logs a progress checkpoint. 0 uses default (100).
 }
 
 // Validate checks that Config values are sane.
@@ -35,6 +36,10 @@ func (c *WeaverConfig) Validate() error {
 
 	if c.UserAgent == "" {
 		c.UserAgent = defaultUserAgent
+	}
+
+	if c.ProgressInterval <= 0 {
+		c.ProgressInterval = defaultProgressInterval
 	}
 
 	return nil

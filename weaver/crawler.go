@@ -8,6 +8,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/google/uuid"
+
 	"github.com/tristan-hyams/anansi/frontier"
 	"github.com/tristan-hyams/anansi/normalizer"
 	"github.com/tristan-hyams/anansi/parser"
@@ -18,6 +20,7 @@ import (
 // Each Crawler runs in its own goroutine, managed by the Weaver.
 // Has its own http.Client backed by the Weaver's shared Transport.
 type Crawler struct {
+	id     uuid.UUID
 	weaver *Weaver
 	client *http.Client
 }
@@ -28,6 +31,12 @@ type Crawler struct {
 // When pending reaches 0, the monitor knows all discovered URLs have been
 // fully processed — deterministic completion without polling races.
 func (c *Crawler) crawl(ctx context.Context) {
+	c.weaver.logger.Info("crawler started", logKeyCrawlerID, c.id)
+	defer c.weaver.logger.Info("crawler stopped", logKeyCrawlerID, c.id)
+
+	processed := 0
+	interval := c.weaver.cfg.ProgressInterval
+
 	for {
 		fu, err := c.weaver.front.Dequeue(ctx)
 		if err != nil {
@@ -36,6 +45,14 @@ func (c *Crawler) crawl(ctx context.Context) {
 
 		c.processURL(ctx, fu)
 		c.weaver.front.Done()
+
+		processed++
+		if processed%interval == 0 {
+			c.weaver.logger.Info("crawler progress",
+				logKeyCrawlerID, c.id,
+				"processed", processed,
+			)
+		}
 	}
 }
 
@@ -69,7 +86,8 @@ func (c *Crawler) processURL(ctx context.Context, fu *frontier.FrontierURL) {
 }
 
 // handleResponse processes a successful HTTP response.
-func (c *Crawler) handleResponse(ctx context.Context, fu *frontier.FrontierURL, resp *http.Response, pageURL string, start time.Time) {
+func (c *Crawler) handleResponse(
+	ctx context.Context, fu *frontier.FrontierURL, resp *http.Response, pageURL string, start time.Time) {
 
 	w := c.weaver
 	ct := resp.Header.Get("Content-Type")
@@ -103,7 +121,7 @@ func (c *Crawler) handleResponse(ctx context.Context, fu *frontier.FrontierURL, 
 		w.logger.Warn("link extraction failed", logKeyURL, pageURL, "error", err)
 	}
 
-	w.logger.Info("crawled",
+	w.logger.Debug("crawled",
 		logKeyURL, pageURL,
 		logKeyDepth, fu.Depth,
 		logKeyLinks, len(links),

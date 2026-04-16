@@ -1,8 +1,10 @@
-package weaver
+package fileutil
 
 import (
 	"slices"
 	"time"
+
+	"github.com/tristan-hyams/anansi/weaver"
 )
 
 // Stats holds aggregated crawl statistics computed from PageResults.
@@ -24,12 +26,12 @@ type LatencyStats struct {
 
 // ComputeStats aggregates statistics from the Web's page results.
 // Only includes pages that were actually fetched (have a status code).
-func (w *Web) ComputeStats() *Stats {
+func ComputeStats(web *weaver.Web) *Stats {
 	statusCodes := make(map[int]int)
 	contentTypes := make(map[string]int)
 	var durations []time.Duration
 
-	for _, p := range w.Pages {
+	for _, p := range web.Pages {
 		if p.Status > 0 {
 			statusCodes[p.Status]++
 		}
@@ -58,30 +60,18 @@ func computeLatency(durations []time.Duration) LatencyStats {
 
 	slices.Sort(durations)
 
+	n := len(durations)
 	var total time.Duration
 	for _, d := range durations {
 		total += d
 	}
 
 	return LatencyStats{
-		Avg: total / time.Duration(len(durations)),
-		P50: percentile(durations, pct50),
-		P95: percentile(durations, pct95),
-		P99: percentile(durations, pct99),
+		Avg: total / time.Duration(n),
+		P50: durations[50*n/100],
+		P95: durations[min(95*n/100, n-1)],
+		P99: durations[min(99*n/100, n-1)],
 		Min: durations[0],
-		Max: durations[len(durations)-1],
+		Max: durations[n-1],
 	}
-}
-
-func percentile(sorted []time.Duration, pct int) time.Duration {
-	if len(sorted) == 0 {
-		return 0
-	}
-
-	idx := (pct * len(sorted)) / pct100
-	if idx >= len(sorted) {
-		idx = len(sorted) - 1
-	}
-
-	return sorted[idx]
 }

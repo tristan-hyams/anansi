@@ -1,43 +1,20 @@
 package weaver
 
-import (
-	"errors"
-	"time"
-)
+import "errors"
 
 // errMaxDepth indicates a URL was skipped because it exceeded the configured max depth.
 var errMaxDepth = errors.New("max depth exceeded")
 
 const (
-	defaultUserAgent  = "Anansi"
-	defaultBufferSize = 0 // use frontier's default
+	defaultUserAgent = "Anansi"
 
-	logKeyURL   = "url"
-	logKeyDepth = "depth"
-	logKeyLinks = "links"
+	// defaultProgressInterval is the number of URLs a crawler processes
+	// before logging a progress checkpoint. Keeps logs quiet during
+	// normal operation but gives visibility on long crawls.
+	defaultProgressInterval = 100
 
-	summaryWidth         = 40
-	summaryDurationRound = 100 * time.Millisecond
-	pathSeparator        = "/"
-
-	pct50  = 50
-	pct95  = 95
-	pct99  = 99
-	pct100 = 100
-
-	//nolint:revive // ASCII art banner for the crawl summary.
-	banner = `
-    /\  .-"""-.  /\
-   //\\/  ,,,  \//\\
-   |/\| ,;;;;;, |/\|
-   //\\\;-"""-;///\\
-  //  \/   .   \/  \\
- (| ,-_| \ | / |_-, |)
-   //` + "`" + `__\.-.-./__` + "`" + `\\
-  // /.-( \;/ )-.\ \\
- (\ ,-_/  |_|  \_-, /)
-  \/    '-._._.-'    \/
-   \  /  |   |  \  /
-    \/   |   |   \/
-`
+	logKeyURL       = "url"
+	logKeyDepth     = "depth"
+	logKeyLinks     = "links"
+	logKeyCrawlerID = "crawler_id"
 )

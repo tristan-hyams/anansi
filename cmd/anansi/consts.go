@@ -13,8 +13,5 @@ const (
 	exitCodeError  = 1
 	exitCodeSIGINT = 130
 
-	outputResultsFile = "crawl-results.md"
-	outputJSONFile    = "crawl-results.json"
-	outputErrorsFile  = "crawl-errors.md"
 	summaryDurationRound = 100 * time.Millisecond
 )

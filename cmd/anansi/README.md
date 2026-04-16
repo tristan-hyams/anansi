@@ -69,7 +69,7 @@ To capture logs: `bin\anansi.exe https://crawlme.monzo.com/ 2>crawl.log`
 - Structured logger setup (`SetupLogger`)
 - Signal handling for graceful shutdown (`SetupSignalContext`)
 - Wiring `weaver.NewWeaver()` → `weaver.Weave()`
-- Printing crawl summary via `web.String()`
+- Delegating output to `fileutil.WriteOutputFiles()`
 
 ## Files
 

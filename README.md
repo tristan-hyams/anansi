@@ -122,8 +122,9 @@ Anansi uses a **worker pool** with a buffered channel as a work queue. A global 
 
 | Package | Responsibility |
 |---|---|
-| `cmd/anansi` | CLI entry point, flag parsing, summary output |
+| `cmd/anansi` | CLI entry point, flag parsing, wires weaver and fileutil |
 | `weaver` | Orchestrator: Weaver spawns Crawlers, owns frontier/rate limiter |
+| `fileutil` | Rendering and file output: markdown, JSON, error logs, stats |
 | `frontier` | URL queue + visited tracking (interface-based) |
 | `parser` | HTML link extraction via tokenizer |
 | `normalizer` | URL canonicalization |

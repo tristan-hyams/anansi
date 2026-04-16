@@ -1,20 +1,22 @@
-package weaver
+package fileutil
 
 import (
 	"encoding/json"
 	"fmt"
 	"time"
+
+	"github.com/tristan-hyams/anansi/weaver"
 )
 
 // jsonOutput is the top-level JSON structure for machine-readable crawl results.
 type jsonOutput struct {
-	Origin   string            `json:"origin"`
-	Visited  int               `json:"visited"`
-	Skipped  int               `json:"skipped"`
-	Duration string            `json:"duration"`
-	Stats    *jsonStats        `json:"stats"`
-	Pages    []jsonPageResult  `json:"pages"`
-	Errors   []jsonError       `json:"errors,omitempty"`
+	Origin   string           `json:"origin"`
+	Visited  int              `json:"visited"`
+	Skipped  int              `json:"skipped"`
+	Duration string           `json:"duration"`
+	Stats    *jsonStats       `json:"stats"`
+	Pages    []jsonPageResult `json:"pages"`
+	Errors   []jsonError      `json:"errors,omitempty"`
 }
 
 type jsonStats struct {
@@ -49,15 +51,15 @@ type jsonError struct {
 	Timestamp string `json:"timestamp"`
 }
 
-// JSON returns the crawl results as indented JSON bytes.
-func (w *Web) JSON() ([]byte, error) {
+// RenderJSON returns the crawl results as indented JSON bytes.
+func RenderJSON(web *weaver.Web) ([]byte, error) {
 
-	stats := w.ComputeStats()
+	stats := ComputeStats(web)
 
 	var pages []jsonPageResult
 	var errors []jsonError
 
-	for _, p := range w.Pages {
+	for _, p := range web.Pages {
 		ts := p.Timestamp.Format(time.RFC3339)
 
 		if p.Error != nil {
@@ -82,10 +84,10 @@ func (w *Web) JSON() ([]byte, error) {
 	}
 
 	output := jsonOutput{
-		Origin:   w.OriginURL,
-		Visited:  w.Visited,
-		Skipped:  w.Skipped,
-		Duration: w.Duration.Round(summaryDurationRound).String(),
+		Origin:   web.OriginURL,
+		Visited:  web.Visited,
+		Skipped:  web.Skipped,
+		Duration: web.Duration.Round(summaryDurationRound).String(),
 		Stats: &jsonStats{
 			StatusCodes:  stats.StatusCodes,
 			ContentTypes: stats.ContentTypes,

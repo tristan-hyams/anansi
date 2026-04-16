@@ -10,18 +10,15 @@ Named after Anansi the spider: the weaver weaves the web, and crawlers venture o
 wv, err := weaver.NewWeaver(ctx, cfg, originURL, logger)
 web, err := wv.Weave(ctx)
 
-// Outputs
-fmt.Print(web.String())        // Markdown summary with stats + sitemap tree
-jsonBytes, _ := web.JSON()     // Machine-readable JSON
-errorLog := web.ErrorLog()     // Errors grouped by reason with timestamps
-stats := web.ComputeStats()    // Latency P50/P95/P99, status codes, content types
+// web.Visited, web.Skipped, web.Duration, web.Pages — plain data
+// Rendering and file output live in the fileutil package.
 ```
 
 ## Architecture
 
 - **Weaver** — orchestrator. Owns config, frontier, rate limiter, robots rules. Pre-creates Crawlers during construction.
-- **Crawler** — worker. Fetches pages, checks headers, parses links, enqueues new URLs. Each runs in its own goroutine with its own `http.Client` backed by the shared `webutil.Transport()` singleton.
-- **Web** — crawl result. `String()` renders markdown with spider banner, latency stats, sitemap tree. `JSON()` returns machine-readable output. `ErrorLog()` groups errors by reason with timestamps.
+- **Crawler** — worker. Each has a UUID ID and logs start/stop events. Fetches pages, checks headers, parses links, enqueues new URLs. Runs in its own goroutine with its own `http.Client` backed by the shared `webutil.Transport()` singleton. Parse errors are recorded on `PageResult`.
+- **Web** — crawl result data. Contains visited/skipped counts, duration, and per-page results.
 
 ## Page Fetch Pipeline
 
@@ -37,10 +34,8 @@ Dequeue → max depth check → rate limit → HTTP GET → Content-Type check
 | `weaver.go` | `Weaver` struct, `NewWeaver()`, `Weave()`, monitor, result building |
 | `crawler.go` | `Crawler` struct, page processing, link filtering, HTTP fetch |
 | `config.go` | `WeaverConfig` with `Validate()`, `CrawlRate(rules)` |
-| `result.go` | `Web` with `String()`, `ErrorLog()`, sitemap tree, `PageResult` |
-| `json.go` | `Web.JSON()` — machine-readable JSON output |
-| `stats.go` | `ComputeStats()` — latency P50/P95/P99, status codes, content types |
-| `consts.go` | Defaults, log keys, summary formatting, spider banner |
+| `result.go` | `Web` and `PageResult` — crawl result data structs |
+| `consts.go` | Defaults, log keys, error sentinels |
 
 ## Termination
 
