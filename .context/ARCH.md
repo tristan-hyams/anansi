@@ -106,7 +106,7 @@ Two complementary mechanisms:
 
 Fetched from `{scheme}://{host}/robots.txt`. Parsed for `User-agent: *` Disallow rules. URLs checked against rules before enqueuing.
 
-Uses `github.com/temoto/robotstxt` for parsing — not a crawler framework.
+Uses `github.com/temoto/robotstxt` for parsing - not a crawler framework.
 
 `Crawl-delay` directive exposed as `time.Duration` for the rate limiter.
 
@@ -125,7 +125,7 @@ Checked on every HTTP response via the `X-Robots-Tag` header. Relevant directive
 - **`noindex`**: not relevant for crawling (search engine indexing concern).
 - **`follow`** or absent: proceed normally.
 
-Example from crawlme.monzo.com: `X-Robots-Tag: noindex,follow` — don't index, but do follow links.
+Example from crawlme.monzo.com: `X-Robots-Tag: noindex,follow` - don't index, but do follow links.
 
 ---
 
@@ -143,6 +143,6 @@ Example from crawlme.monzo.com: `X-Robots-Tag: noindex,follow` — don't index, 
 
 ## Output Rendering
 
-Crawl results (`Web` struct) are plain data. All rendering — markdown summary, JSON output, error logs, statistics — lives in the `fileutil` package, not in the weaver. This separation keeps the orchestrator focused on crawling and makes output formats independently testable.
+Crawl results (`Web` struct) are plain data. All rendering - markdown summary, JSON output, error logs, statistics - lives in the `fileutil` package, not in the weaver. This separation keeps the orchestrator focused on crawling and makes output formats independently testable.
 
 Output files are written by `fileutil.WriteOutputFiles()`, called from the CLI after the crawl completes.

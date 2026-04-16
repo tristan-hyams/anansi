@@ -24,7 +24,7 @@ Robot compliance for the Anansi web crawler. Two mechanisms:
 | `ParseXRobotsTag(header)` | Parses `X-Robots-Tag` HTTP header into directives |
 | `Directives.ShouldFollow()` | Returns false if `nofollow` or `none` is set |
 
-Checked on every page response. No additional HTTP request needed — the header is on the GET response the crawler already makes.
+Checked on every page response. No additional HTTP request needed - the header is on the GET response the crawler already makes.
 
 ### Supported Directives
 

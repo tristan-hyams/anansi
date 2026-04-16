@@ -108,7 +108,7 @@ robots.txt compliance. Fetches and parses rules.
 
 ---
 
-## Phase 5 — weaver
+## Phase 5 - weaver
 
 Orchestrator. Wires everything together. This is the core.
 
@@ -126,10 +126,10 @@ Orchestrator. Wires everything together. This is the core.
     - Monitor goroutine: polls `frontier.IsDone()` for natural completion
     - Context cancellation path: drain workers via ctx.Done()
   - `Web` struct: Visited, Skipped, Duration, Pages, OriginURL
-    - `String()` — markdown summary with spider banner, stats, sitemap tree
-    - `JSON()` — machine-readable JSON output
-    - `ErrorLog()` — errors grouped by reason with timestamps
-    - `ComputeStats()` — latency P50/P95/P99, status codes, content-type breakdown
+    - `String()` - markdown summary with spider banner, stats, sitemap tree
+    - `JSON()` - machine-readable JSON output
+    - `ErrorLog()` - errors grouped by reason with timestamps
+    - `ComputeStats()` - latency P50/P95/P99, status codes, content-type breakdown
 - [x] `weaver/weaver_test.go` + `weaver/weaver_integration_test.go`
   - Happy path, cycle detection, external link filtering, non-HTML skip
   - robots.txt respected, X-Robots-Tag nofollow, max depth

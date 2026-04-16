@@ -1,5 +1,5 @@
 // Package weaver is the orchestration layer for the Anansi web crawler.
-// The Weaver manages the crawl — it owns the frontier, rate limiter, robots
+// The Weaver manages the crawl - it owns the frontier, rate limiter, robots
 // rules, and spawns Crawlers (workers) that fetch and parse pages.
 //
 // Named after Anansi the spider: the weaver weaves the web,
@@ -9,8 +9,10 @@ package weaver
 import (
 	"context"
 	"fmt"
+	"io"
 	"log/slog"
 	"net/url"
+	"strings"
 	"sync"
 	"time"
 
@@ -30,20 +32,22 @@ type Weaver struct {
 	front    frontier.Frontier
 	rules    *robots.Rules
 	logger   *slog.Logger
+	output   io.Writer
 	crawlers []*Crawler
 	mu       sync.Mutex
+	outputMu sync.Mutex
 	pages    []PageResult
 }
 
 // NewWeaver creates a Weaver. Fetches robots.txt during construction.
 // If robots.txt fetch fails, the crawl continues with allow-all rules.
-func NewWeaver(ctx context.Context, cfg *WeaverConfig, origin *url.URL, logger *slog.Logger) (*Weaver, error) {
+func NewWeaver(ctx context.Context, cfg *WeaverConfig, origin *url.URL, logger *slog.Logger, output io.Writer) (*Weaver, error) {
 
 	if err := cfg.Validate(); err != nil {
 		return nil, fmt.Errorf("invalid config: %w", err)
 	}
 
-	// Fetch robots.txt — 404/403/network errors degrade to allow-all inside
+	// Fetch robots.txt - 404/403/network errors degrade to allow-all inside
 	// Fetch itself. If Fetch returns an error, it's a real failure (5xx,
 	// context cancellation) and we should not proceed.
 	rules, err := robots.Fetch(ctx, origin, logger)
@@ -68,9 +72,10 @@ func NewWeaver(ctx context.Context, cfg *WeaverConfig, origin *url.URL, logger *
 		front:   front,
 		rules:   rules,
 		logger:  logger,
+		output:  output,
 	}
 
-	// Pre-create crawlers — each gets its own HTTP client backed by
+	// Pre-create crawlers - each gets its own HTTP client backed by
 	// the singleton transport. Created once, reused across Weave calls.
 	wv.crawlers = make([]*Crawler, cfg.Workers)
 	for i := range cfg.Workers {
@@ -110,7 +115,7 @@ func (w *Weaver) Weave(ctx context.Context) (*Web, error) {
 }
 
 // monitorCompletion polls until the crawl is naturally complete.
-// Uses the frontier's pending counter — deterministic, no races.
+// Uses the frontier's pending counter - deterministic, no races.
 // Pending is incremented on enqueue and decremented when a crawler
 // calls Done() after fully processing a URL. When pending reaches 0,
 // every discovered URL has been processed and no new work was generated.
@@ -160,4 +165,25 @@ func (w *Weaver) recordPage(pr PageResult) {
 	w.mu.Lock()
 	defer w.mu.Unlock()
 	w.pages = append(w.pages, pr)
+}
+
+// printPage writes a visited URL and its discovered links to the output
+// writer. Thread-safe - uses a separate mutex to avoid contention with
+// recordPage. Output is buffered per page and written in one call to
+// prevent interleaving between crawlers.
+func (w *Weaver) printPage(pr PageResult) {
+	if !w.cfg.LogLinks || w.output == nil {
+		return
+	}
+
+	var sb strings.Builder
+	_, _ = fmt.Fprintf(&sb, "%s\n", pr.URL)
+	for _, link := range pr.FoundLinks {
+		_, _ = fmt.Fprintf(&sb, "  %s\n", link)
+	}
+	_, _ = fmt.Fprint(&sb, "\n")
+
+	w.outputMu.Lock()
+	defer w.outputMu.Unlock()
+	_, _ = fmt.Fprint(w.output, sb.String())
 }

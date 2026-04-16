@@ -39,15 +39,15 @@ anansi/
 │   ├── weaver.go                # Weaver struct, NewWeaver(), Weave(), monitor
 │   ├── crawler.go               # Crawler struct, page fetch pipeline
 │   ├── config.go                # WeaverConfig with Validate(), CrawlRate()
-│   ├── result.go                # Web and PageResult — crawl result data structs
+│   ├── result.go                # Web and PageResult - crawl result data structs
 │   ├── consts.go                # Defaults, log keys, error sentinels
 │   ├── weaver_test.go           # httptest integration tests
 │   └── weaver_integration_test.go # Live test against crawlme.monzo.com
 ├── fileutil/
 │   ├── markdown.go              # RenderMarkdown(), RenderErrorLog(), sitemap tree
-│   ├── json.go                  # RenderJSON() — machine-readable JSON output
+│   ├── json.go                  # RenderJSON() - machine-readable JSON output
 │   ├── stats.go                 # ComputeStats(), Stats, LatencyStats, percentiles
-│   ├── writer.go                # WriteOutputFiles() — writes results/JSON/errors to disk
+│   ├── writer.go                # WriteOutputFiles() - writes results/JSON/errors to disk
 │   ├── consts.go                # Banner, summary formatting, output filenames
 │   ├── stats_test.go            # ComputeStats, computeLatency tests
 │   ├── markdown_test.go         # RenderMarkdown, RenderErrorLog tests
@@ -90,6 +90,8 @@ anansi/
 ├── .github/
 │   └── copilot-instructions.md  # GitHub Copilot shim → points to .context/
 ├── AGENTS.md                    # Codex/agent shim → points to .context/
+├── DESIGN.md                    # Design decisions, trade-offs, rationale
+├── TESTING.md                   # Test strategy, integration tests, race detector
 ├── PLAN.md                      # Phased implementation plan
 ├── Dockerfile                   # Multi-stage: golang:1.26-alpine → alpine:3.23
 ├── Makefile                     # build, test, lint, run, clean, tidy, update, docker
@@ -112,7 +114,7 @@ anansi/
 | `weaver` | Orchestrates the crawl. Owns frontier, rate limiter, robots rules. Pre-creates Crawlers. | `Weaver`, `Crawler`, `WeaverConfig`, `Web`, `PageResult` |
 | `fileutil` | Rendering and file output. Converts `Web` results to markdown, JSON, error logs. Writes output files. | `RenderMarkdown()`, `RenderJSON()`, `RenderErrorLog()`, `ComputeStats()`, `WriteOutputFiles()` |
 | `frontier` | URL queue + visited tracking + pending counter. Interface-based for swappability. | `Frontier` (7 methods), `InMemory`, `FrontierURL` |
-| `parser` | Extracts `<a href>` links from HTML using tokenizer. No URL filtering — returns raw hrefs. | `ExtractLinks(ctx, r io.Reader) ([]string, error)` |
+| `parser` | Extracts `<a href>` links from HTML using tokenizer. No URL filtering - returns raw hrefs. | `ExtractLinks(ctx, r io.Reader) ([]string, error)` |
 | `normalizer` | Canonicalizes URLs: strips fragments, lowercases host, resolves relative paths. Pure functions. | `Normalize(base, raw)`, `IsSameHost(origin, candidate)`, `IsFollowableScheme(u)` |
 | `robots` | robots.txt + X-Robots-Tag compliance. Creates own HTTP client via webutil. | `Fetch(ctx, baseURL, logger)`, `Rules`, `IsAllowed()`, `Directives`, `ParseXRobotsTag()` |
 | `webutil` | Shared HTTP transport singleton. Per-worker client creation. | `Transport()`, `NewClient(timeout)` |

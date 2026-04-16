@@ -19,6 +19,7 @@ type AnansiConfig struct {
 	Timeout  time.Duration `json:"timeout"`
 	Origin   string        `json:"origin"`
 	LogLevel string        `json:"log_level"`
+	LogLinks bool          `json:"log_links"`
 }
 
 // LoadConfigFromFile reads a JSON config file and returns an AnansiConfig.

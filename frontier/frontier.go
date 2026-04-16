@@ -35,7 +35,7 @@ type Frontier interface {
 	Pending() int32
 
 	// IsDone returns true when all enqueued URLs have been fully processed.
-	// Deterministic — no polling races. Pending reaches 0 only when every
+	// Deterministic - no polling races. Pending reaches 0 only when every
 	// URL that was ever enqueued has had Done() called.
 	IsDone() bool
 
@@ -114,7 +114,7 @@ func (f *InMemory) Pending() int32 {
 
 // IsDone returns true when all enqueued URLs have been fully processed
 // and the queue is physically empty. Both conditions guard against edge
-// cases — pending counter alone could mask a bug (e.g. double Done call).
+// cases - pending counter alone could mask a bug (e.g. double Done call).
 func (f *InMemory) IsDone() bool {
 	return f.pending.Load() <= 0 && len(f.queue) == 0
 }

@@ -16,7 +16,7 @@ func RenderMarkdown(web *weaver.Web) string {
 	var sb strings.Builder
 
 	_, _ = fmt.Fprint(&sb, banner)
-	_, _ = fmt.Fprintf(&sb, "  A N A N S I — %s\n\n", web.OriginURL)
+	_, _ = fmt.Fprintf(&sb, "  A N A N S I - %s\n\n", web.OriginURL)
 	_, _ = fmt.Fprintln(&sb, strings.Repeat("=", summaryWidth))
 	_, _ = fmt.Fprintf(&sb, "Pages crawled: %d\n", web.Visited)
 	_, _ = fmt.Fprintf(&sb, "Pages skipped: %d\n", web.Skipped)
@@ -39,7 +39,7 @@ func RenderMarkdown(web *weaver.Web) string {
 		return 0
 	})
 
-	// Flat page list — only crawled pages, not skipped.
+	// Flat page list - only crawled pages, not skipped.
 	for _, p := range web.Pages {
 		if p.Error != nil {
 			continue

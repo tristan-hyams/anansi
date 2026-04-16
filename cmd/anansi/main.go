@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"io"
 	"os"
 
 	"github.com/tristan-hyams/anansi/fileutil"
@@ -32,6 +33,12 @@ func main() {
 		MaxDepth:  cfg.MaxDepth,
 		Timeout:   cfg.Timeout,
 		UserAgent: "Anansi",
+		LogLinks:  cfg.LogLinks,
+	}
+
+	var output io.Writer = os.Stdout
+	if !cfg.LogLinks {
+		output = io.Discard
 	}
 
 	logger.Info(
@@ -43,7 +50,7 @@ func main() {
 		"timeout", cfg.Timeout,
 	)
 
-	wv, err := weaver.NewWeaver(ctx, weaverCfg, origin, logger)
+	wv, err := weaver.NewWeaver(ctx, weaverCfg, origin, logger, output)
 	if err != nil {
 		_, _ = fmt.Fprintf(os.Stderr, errFmt, err)
 		os.Exit(exitCodeError)
@@ -60,7 +67,7 @@ func main() {
 		os.Exit(exitCodeError)
 	}
 
-	// Short terminal summary — full report is in the files.
+	// Short terminal summary - full report is in the files.
 	_, _ = fmt.Fprintf(os.Stderr,
 		"\ncrawl complete: %d pages crawled, %d skipped, %s\n",
 		web.Visited, web.Skipped, web.Duration.Round(summaryDurationRound),

@@ -2,6 +2,7 @@ package weaver_test
 
 import (
 	"context"
+	"io"
 	"net/url"
 	"testing"
 	"time"
@@ -31,8 +32,8 @@ var knownPages = []string{
 // TestWeave_CrawlMe is a live integration test against crawlme.monzo.com.
 // The site is a static S3/CloudFront site with known structure:
 //   - 10 top-level pages (index, about, products, services, blog, contact, help, faq, terms, privacy)
-//   - /products/ — paginated (7+ pages), each listing UUID-named product pages (100+ total)
-//   - /blog/ — paginated (5+ pages), each listing numbered post pages (77+ total)
+//   - /products/ - paginated (7+ pages), each listing UUID-named product pages (100+ total)
+//   - /blog/ - paginated (5+ pages), each listing numbered post pages (77+ total)
 //   - contact.html has external links (instagram, facebook, twitter), mailto:, tel:
 //   - X-Robots-Tag: noindex,follow on all pages (follow = crawl allowed)
 //   - robots.txt returns 403 (S3 missing file behavior, treated as allow-all)
@@ -55,7 +56,7 @@ func TestWeave_CrawlMe(t *testing.T) {
 	}
 
 	logger := testLogger()
-	wv, err := weaver.NewWeaver(context.Background(), cfg, origin, logger)
+	wv, err := weaver.NewWeaver(context.Background(), cfg, origin, logger, io.Discard)
 	require.NoError(t, err)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)

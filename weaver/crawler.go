@@ -25,11 +25,11 @@ type Crawler struct {
 	client *http.Client
 }
 
-// crawl is the main loop — dequeue URLs, process them, repeat until context is cancelled.
+// crawl is the main loop - dequeue URLs, process them, repeat until context is cancelled.
 //
 // Each processed URL calls frontier.Done() to decrement the pending counter.
 // When pending reaches 0, the monitor knows all discovered URLs have been
-// fully processed — deterministic completion without polling races.
+// fully processed - deterministic completion without polling races.
 func (c *Crawler) crawl(ctx context.Context) {
 	c.weaver.logger.Info("crawler started", logKeyCrawlerID, c.id)
 	defer c.weaver.logger.Info("crawler stopped", logKeyCrawlerID, c.id)
@@ -121,18 +121,32 @@ func (c *Crawler) handleResponse(
 		w.logger.Warn("link extraction failed", logKeyURL, pageURL, "error", err)
 	}
 
-	w.logger.Debug("crawled",
-		logKeyURL, pageURL,
-		logKeyDepth, fu.Depth,
-		logKeyLinks, len(links),
-		"duration", time.Since(start),
-	)
+	// Normalize raw hrefs to absolute URLs for display.
+	foundLinks := make([]string, 0, len(links))
+	for _, raw := range links {
+		normalized, nErr := normalizer.Normalize(fu.URL, raw)
+		if nErr != nil {
+			continue
+		}
+		foundLinks = append(foundLinks, normalized.String())
+	}
 
-	w.recordPage(PageResult{
-		URL: pageURL, Links: len(links), Depth: fu.Depth,
+	if w.cfg.LogLinks {
+		w.logger.Info("crawled",
+			logKeyURL, pageURL,
+			logKeyDepth, fu.Depth,
+			logKeyLinks, len(links),
+			"duration", time.Since(start),
+		)
+	}
+
+	pr := PageResult{
+		URL: pageURL, Links: len(links), FoundLinks: foundLinks, Depth: fu.Depth,
 		Status: resp.StatusCode, ContentType: ct, Duration: time.Since(start),
 		Error: err,
-	})
+	}
+	w.recordPage(pr)
+	w.printPage(pr)
 
 	c.enqueueLinks(ctx, fu, links)
 }

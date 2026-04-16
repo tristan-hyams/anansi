@@ -48,7 +48,7 @@ func TestComputeStats_CountsContentTypes(t *testing.T) {
 			{URL: "/a", ContentType: "text/html", Status: 200, Duration: time.Millisecond},
 			{URL: "/b", ContentType: "text/html", Status: 200, Duration: time.Millisecond},
 			{URL: "/c", ContentType: "application/json", Status: 200, Duration: time.Millisecond},
-			{URL: "/d"}, // no content type — skipped/errored
+			{URL: "/d"}, // no content type - skipped/errored
 		},
 	}
 

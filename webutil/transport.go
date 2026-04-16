@@ -16,7 +16,7 @@ var (
 )
 
 // Transport returns the singleton http.Transport configured for long-lived
-// crawling. Safe for concurrent use — initialized once on first call.
+// crawling. Safe for concurrent use - initialized once on first call.
 // All http.Clients should wrap this shared transport.
 //
 // Configuration rationale:

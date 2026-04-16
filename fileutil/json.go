@@ -35,13 +35,14 @@ type jsonLatency struct {
 }
 
 type jsonPageResult struct {
-	URL         string `json:"url"`
-	Links       int    `json:"links"`
-	Depth       int    `json:"depth"`
-	Status      int    `json:"status"`
-	ContentType string `json:"content_type,omitempty"`
-	Duration    string `json:"duration"`
-	Timestamp   string `json:"timestamp"`
+	URL         string   `json:"url"`
+	Links       int      `json:"links"`
+	FoundLinks  []string `json:"found_links,omitempty"`
+	Depth       int      `json:"depth"`
+	Status      int      `json:"status"`
+	ContentType string   `json:"content_type,omitempty"`
+	Duration    string   `json:"duration"`
+	Timestamp   string   `json:"timestamp"`
 }
 
 type jsonError struct {
@@ -75,6 +76,7 @@ func RenderJSON(web *weaver.Web) ([]byte, error) {
 		pages = append(pages, jsonPageResult{
 			URL:         p.URL,
 			Links:       p.Links,
+			FoundLinks:  p.FoundLinks,
 			Depth:       p.Depth,
 			Status:      p.Status,
 			ContentType: p.ContentType,

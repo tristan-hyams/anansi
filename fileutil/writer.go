@@ -9,9 +9,9 @@ import (
 )
 
 // WriteOutputFiles writes the crawl results to disk:
-//   - crawl-results.md  — markdown summary with stats and sitemap
-//   - crawl-results.json — machine-readable JSON
-//   - crawl-errors.md   — error report (only if errors occurred)
+//   - crawl-results.md  - markdown summary with stats and sitemap
+//   - crawl-results.json - machine-readable JSON
+//   - crawl-errors.md   - error report (only if errors occurred)
 //
 // Status messages are written to w (typically os.Stderr).
 func WriteOutputFiles(web *weaver.Web, w io.Writer) error {

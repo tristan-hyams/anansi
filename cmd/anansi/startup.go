@@ -21,6 +21,7 @@ func ParseFlags() (*AnansiConfig, error) {
 	maxDepth := flag.Int("max-depth", defaultMaxDepth, "maximum crawl depth (0 = unlimited)")
 	timeout := flag.Duration("timeout", defaultTimeout, "HTTP request timeout")
 	logLevel := flag.String("log-level", defaultLogLevel, "log level (debug, info, warn, error)")
+	logLinks := flag.Bool("log-links", true, "print each visited URL and its links to stdout")
 
 	flag.Usage = func() {
 		_, _ = fmt.Fprint(os.Stderr, "Usage: anansi [flags] <url>\n\nFlags:\n")
@@ -42,6 +43,7 @@ func ParseFlags() (*AnansiConfig, error) {
 		Timeout:  *timeout,
 		Origin:   flag.Arg(0),
 		LogLevel: *logLevel,
+		LogLinks: *logLinks,
 	}
 
 	if _, err := cfg.OriginURL(); err != nil {

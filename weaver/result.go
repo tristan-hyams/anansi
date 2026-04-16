@@ -3,7 +3,7 @@ package weaver
 import "time"
 
 // Web is the crawl summary returned by Weaver.Weave().
-// Represents the web that was woven — all pages discovered and their metadata.
+// Represents the web that was woven - all pages discovered and their metadata.
 type Web struct {
 	Visited   int
 	Skipped   int
@@ -16,6 +16,7 @@ type Web struct {
 type PageResult struct {
 	URL         string
 	Links       int
+	FoundLinks  []string
 	Depth       int
 	Duration    time.Duration
 	Status      int

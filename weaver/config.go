@@ -17,7 +17,8 @@ type WeaverConfig struct {
 	Timeout          time.Duration
 	BufferSize       int
 	UserAgent        string
-	ProgressInterval int // URLs processed before each crawler logs a progress checkpoint. 0 uses default (100).
+	ProgressInterval int  // URLs processed before each crawler logs a progress checkpoint. 0 uses default (100).
+	LogLinks         bool // Print each visited URL and its discovered links to the output writer.
 }
 
 // Validate checks that Config values are sane.

@@ -20,6 +20,6 @@ func TestSomething_LiveSite(t *testing.T) {
 
 ## Design Notes
 
-- **Project root found via `.git`** — walks up from `os.Getwd()`. Uses `.git` instead of `go.mod` so mono-repos with multiple modules find the correct root.
-- **`.env.test` required** — `require.NoError` if the file is missing. Fails loudly, not silently.
-- **Env vars override** — CI can set `GO_RUN_INTEGRATIONS=true` directly without the file.
+- **Project root found via `.git`** - walks up from `os.Getwd()`. Uses `.git` instead of `go.mod` so mono-repos with multiple modules find the correct root.
+- **`.env.test` required** - `require.NoError` if the file is missing. Fails loudly, not silently.
+- **Env vars override** - CI can set `GO_RUN_INTEGRATIONS=true` directly without the file.

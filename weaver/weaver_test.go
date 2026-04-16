@@ -3,6 +3,7 @@ package weaver_test
 import (
 	"context"
 	"fmt"
+	"io"
 	"log/slog"
 	"net/http"
 	"net/http/httptest"
@@ -68,7 +69,7 @@ func TestWeave_HappyPath(t *testing.T) {
 	}))
 	defer srv.Close()
 
-	wv, err := weaver.NewWeaver(context.Background(), testConfig(), mustParseURL(t, srv.URL+"/"), testLogger())
+	wv, err := weaver.NewWeaver(context.Background(), testConfig(), mustParseURL(t, srv.URL+"/"), testLogger(), io.Discard)
 	require.NoError(t, err)
 
 	result, err := wv.Weave(context.Background())
@@ -95,7 +96,7 @@ func TestWeave_CycleDetection(t *testing.T) {
 	}))
 	defer srv.Close()
 
-	wv, err := weaver.NewWeaver(context.Background(), testConfig(), mustParseURL(t, srv.URL+"/"), testLogger())
+	wv, err := weaver.NewWeaver(context.Background(), testConfig(), mustParseURL(t, srv.URL+"/"), testLogger(), io.Discard)
 	require.NoError(t, err)
 
 	result, err := wv.Weave(context.Background())
@@ -124,7 +125,7 @@ func TestWeave_ExternalLinksFiltered(t *testing.T) {
 	}))
 	defer srv.Close()
 
-	wv, err := weaver.NewWeaver(context.Background(), testConfig(), mustParseURL(t, srv.URL+"/"), testLogger())
+	wv, err := weaver.NewWeaver(context.Background(), testConfig(), mustParseURL(t, srv.URL+"/"), testLogger(), io.Discard)
 	require.NoError(t, err)
 
 	result, err := wv.Weave(context.Background())
@@ -158,7 +159,7 @@ func TestWeave_NonHTMLSkipped(t *testing.T) {
 	}))
 	defer srv.Close()
 
-	wv, err := weaver.NewWeaver(context.Background(), testConfig(), mustParseURL(t, srv.URL+"/"), testLogger())
+	wv, err := weaver.NewWeaver(context.Background(), testConfig(), mustParseURL(t, srv.URL+"/"), testLogger(), io.Discard)
 	require.NoError(t, err)
 
 	result, err := wv.Weave(context.Background())
@@ -198,7 +199,7 @@ func TestWeave_RobotsTxtRespected(t *testing.T) {
 	}))
 	defer srv.Close()
 
-	wv, err := weaver.NewWeaver(context.Background(), testConfig(), mustParseURL(t, srv.URL+"/"), testLogger())
+	wv, err := weaver.NewWeaver(context.Background(), testConfig(), mustParseURL(t, srv.URL+"/"), testLogger(), io.Discard)
 	require.NoError(t, err)
 
 	result, err := wv.Weave(context.Background())
@@ -226,7 +227,7 @@ func TestWeave_XRobotsTagNoFollow(t *testing.T) {
 	}))
 	defer srv.Close()
 
-	wv, err := weaver.NewWeaver(context.Background(), testConfig(), mustParseURL(t, srv.URL+"/"), testLogger())
+	wv, err := weaver.NewWeaver(context.Background(), testConfig(), mustParseURL(t, srv.URL+"/"), testLogger(), io.Discard)
 	require.NoError(t, err)
 
 	result, err := wv.Weave(context.Background())
@@ -259,7 +260,7 @@ func TestWeave_MaxDepth(t *testing.T) {
 	cfg := testConfig()
 	cfg.MaxDepth = 2 // crawl depths 0, 1, 2. Depth 3+ skipped.
 
-	wv, err := weaver.NewWeaver(context.Background(), cfg, mustParseURL(t, srv.URL+"/"), testLogger())
+	wv, err := weaver.NewWeaver(context.Background(), cfg, mustParseURL(t, srv.URL+"/"), testLogger(), io.Discard)
 	require.NoError(t, err)
 
 	result, err := wv.Weave(context.Background())
@@ -284,7 +285,7 @@ func TestWeave_ContextCancellation(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 500*time.Millisecond)
 	defer cancel()
 
-	wv, err := weaver.NewWeaver(context.Background(), testConfig(), mustParseURL(t, srv.URL+"/"), testLogger())
+	wv, err := weaver.NewWeaver(context.Background(), testConfig(), mustParseURL(t, srv.URL+"/"), testLogger(), io.Discard)
 	require.NoError(t, err)
 
 	result, err := wv.Weave(ctx)
@@ -306,7 +307,7 @@ func TestWeave_NaturalCompletion_SinglePage(t *testing.T) {
 	}))
 	defer srv.Close()
 
-	wv, err := weaver.NewWeaver(context.Background(), testConfig(), mustParseURL(t, srv.URL+"/"), testLogger())
+	wv, err := weaver.NewWeaver(context.Background(), testConfig(), mustParseURL(t, srv.URL+"/"), testLogger(), io.Discard)
 	require.NoError(t, err)
 
 	result, err := wv.Weave(context.Background())
@@ -332,7 +333,7 @@ func TestWeave_NaturalCompletion_AllLinksExternal(t *testing.T) {
 	}))
 	defer srv.Close()
 
-	wv, err := weaver.NewWeaver(context.Background(), testConfig(), mustParseURL(t, srv.URL+"/"), testLogger())
+	wv, err := weaver.NewWeaver(context.Background(), testConfig(), mustParseURL(t, srv.URL+"/"), testLogger(), io.Discard)
 	require.NoError(t, err)
 
 	result, err := wv.Weave(context.Background())
@@ -373,7 +374,7 @@ func TestWeave_NaturalCompletion_SmallSite(t *testing.T) {
 	}))
 	defer srv.Close()
 
-	wv, err := weaver.NewWeaver(context.Background(), testConfig(), mustParseURL(t, srv.URL+"/"), testLogger())
+	wv, err := weaver.NewWeaver(context.Background(), testConfig(), mustParseURL(t, srv.URL+"/"), testLogger(), io.Discard)
 	require.NoError(t, err)
 
 	result, err := wv.Weave(context.Background())
