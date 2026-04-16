@@ -9,8 +9,6 @@ import (
 var errMaxDepth = errors.New("max depth exceeded")
 
 const (
-	defaultUserAgent = "Anansi"
-
 	// defaultProgressInterval is the number of URLs a crawler processes
 	// before logging a progress checkpoint. Keeps logs quiet during
 	// normal operation but gives visibility on long crawls.
@@ -41,4 +39,10 @@ const (
 
 	// maxRedirects caps the HTTP redirect chain length per request.
 	maxRedirects = 10
+
+	// HTTP request headers. Accept-Encoding is intentionally omitted -
+	// Go's transport handles gzip/deflate transparently when unset.
+	defaultUserAgent     = "Anansi Weaver; Go 1.26;"
+	acceptHeader         = "text/html, */*;q=0.8"
+	acceptLanguageHeader = "en"
 )

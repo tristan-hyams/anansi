@@ -14,5 +14,7 @@ const (
 	exitCodeError  = 1
 	exitCodeSIGINT = 130
 
+	// summaryDurationRound is duplicated in reporting/consts.go.
+	// Could be consolidated into a shared consts package in the future.
 	summaryDurationRound = 100 * time.Millisecond
 )

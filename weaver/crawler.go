@@ -241,6 +241,8 @@ func (c *Crawler) doRequest(ctx context.Context, u *url.URL) (*http.Response, er
 	}
 
 	req.Header.Set("User-Agent", c.weaver.cfg.UserAgent)
+	req.Header.Set("Accept", acceptHeader)
+	req.Header.Set("Accept-Language", acceptLanguageHeader)
 
 	resp, err := c.client.Do(req)
 	if err != nil {

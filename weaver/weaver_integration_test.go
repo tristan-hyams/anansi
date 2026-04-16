@@ -62,8 +62,7 @@ func TestWeave_CrawlMe(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
 	defer cancel()
 
-	web, err := wv.Weave(ctx)
-	require.NoError(t, err)
+	web := wv.Weave(ctx)
 	require.NotNil(t, web)
 
 	t.Logf("visited: %d, skipped: %d, duration: %v", web.Visited, web.Skipped, web.Duration)

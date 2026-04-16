@@ -71,10 +71,7 @@ func main() {
 		fatal(err)
 	}
 
-	web, err := wv.Weave(ctx)
-	if err != nil {
-		fatal(err)
-	}
+	web := wv.Weave(ctx)
 
 	if err := reporting.WriteOutputFiles(web, outputDir, os.Stderr); err != nil {
 		fatal(err)

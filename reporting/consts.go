@@ -4,6 +4,8 @@ import "time"
 
 const (
 	summaryWidth         = 40
+	// summaryDurationRound is duplicated in cmd/anansi/consts.go.
+	// Could be consolidated into a shared consts package in the future.
 	summaryDurationRound = 100 * time.Millisecond
 	pathSeparator        = "/"
 

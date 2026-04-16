@@ -48,6 +48,8 @@ func Transport() *http.Transport {
 // NewClient creates an http.Client with the given timeout backed by the
 // singleton transport. Each goroutine/worker should have its own Client
 // wrapping the shared Transport.
+//
+// TODO: Consider making redirect policy configurable at the Client level instead of Crawler level.
 func NewClient(timeout time.Duration) *http.Client {
 	return &http.Client{
 		Timeout:   timeout,

@@ -81,7 +81,7 @@ func NewWeaver(
 	}
 
 	// Pre-create crawlers - each gets its own HTTP client backed by
-	// the singleton transport. Created once, reused across Weave calls.
+	// the singleton transport.
 	wv.crawlers = make([]*Crawler, cfg.Workers)
 	for i := range cfg.Workers {
 		client := webutil.NewClient(cfg.Timeout)
@@ -97,7 +97,8 @@ func NewWeaver(
 }
 
 // Weave starts the crawl and blocks until completion or context cancellation.
-func (w *Weaver) Weave(ctx context.Context) (*Web, error) {
+// Single-use - the frontier and page results are not reset between calls.
+func (w *Weaver) Weave(ctx context.Context) *Web {
 
 	start := time.Now()
 	w.logger.Info("crawl started", "origin", w.origin.String(), "workers", w.cfg.Workers)
@@ -122,7 +123,7 @@ func (w *Weaver) Weave(ctx context.Context) (*Web, error) {
 
 	wg.Wait()
 
-	return w.buildResult(start), nil
+	return w.buildResult(start)
 }
 
 // monitorCompletion polls until the crawl is naturally complete.

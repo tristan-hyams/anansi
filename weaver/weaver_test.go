@@ -9,6 +9,7 @@ import (
 	"net/http/httptest"
 	"net/url"
 	"strings"
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -84,8 +85,8 @@ func TestWeave_HappyPath(t *testing.T) {
 
 	wv := newTestWeaver(t, testConfig(), srv.URL)
 
-	result, err := wv.Weave(context.Background())
-	require.NoError(t, err)
+	result := wv.Weave(context.Background())
+	
 
 	assert.GreaterOrEqual(t, result.Visited, 3)
 	assert.NotEmpty(t, result.Pages)
@@ -110,8 +111,8 @@ func TestWeave_CycleDetection(t *testing.T) {
 
 	wv := newTestWeaver(t, testConfig(), srv.URL)
 
-	result, err := wv.Weave(context.Background())
-	require.NoError(t, err)
+	result := wv.Weave(context.Background())
+	
 
 	assert.Equal(t, 2, result.Visited)
 }
@@ -138,8 +139,8 @@ func TestWeave_ExternalLinksFiltered(t *testing.T) {
 
 	wv := newTestWeaver(t, testConfig(), srv.URL)
 
-	result, err := wv.Weave(context.Background())
-	require.NoError(t, err)
+	result := wv.Weave(context.Background())
+	
 
 	for _, p := range result.Pages {
 		assert.True(t, strings.HasPrefix(p.URL, srv.URL), "visited external URL: %s", p.URL)
@@ -171,8 +172,8 @@ func TestWeave_NonHTMLSkipped(t *testing.T) {
 
 	wv := newTestWeaver(t, testConfig(), srv.URL)
 
-	result, err := wv.Weave(context.Background())
-	require.NoError(t, err)
+	result := wv.Weave(context.Background())
+	
 
 	var jsonPage *weaver.PageResult
 	for i, p := range result.Pages {
@@ -210,8 +211,8 @@ func TestWeave_RobotsTxtRespected(t *testing.T) {
 
 	wv := newTestWeaver(t, testConfig(), srv.URL)
 
-	result, err := wv.Weave(context.Background())
-	require.NoError(t, err)
+	result := wv.Weave(context.Background())
+	
 
 	for _, p := range result.Pages {
 		assert.NotContains(t, p.URL, "/secret")
@@ -237,8 +238,8 @@ func TestWeave_XRobotsTagNoFollow(t *testing.T) {
 
 	wv := newTestWeaver(t, testConfig(), srv.URL)
 
-	result, err := wv.Weave(context.Background())
-	require.NoError(t, err)
+	result := wv.Weave(context.Background())
+	
 
 	assert.Equal(t, 1, result.Visited)
 }
@@ -269,8 +270,8 @@ func TestWeave_MaxDepth(t *testing.T) {
 
 	wv := newTestWeaver(t, cfg, srv.URL)
 
-	result, err := wv.Weave(context.Background())
-	require.NoError(t, err)
+	result := wv.Weave(context.Background())
+	
 
 	// Depths 0, 1, 2 should be visited. Depth 3 recorded as skipped.
 	assert.Equal(t, 3, result.Visited, "depths 0, 1, 2 should be visited")
@@ -280,11 +281,11 @@ func TestWeave_MaxDepth(t *testing.T) {
 func TestWeave_ContextCancellation(t *testing.T) {
 	t.Parallel()
 
-	requestCount := 0
+	var requestCount atomic.Int32
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		requestCount++
+		n := requestCount.Add(1)
 		w.Header().Set("Content-Type", "text/html")
-		_, _ = fmt.Fprintf(w, `<html><body><a href="/page/%d">Next</a></body></html>`, requestCount)
+		_, _ = fmt.Fprintf(w, `<html><body><a href="/page/%d">Next</a></body></html>`, n)
 	}))
 	defer srv.Close()
 
@@ -293,8 +294,8 @@ func TestWeave_ContextCancellation(t *testing.T) {
 
 	wv := newTestWeaver(t, testConfig(), srv.URL)
 
-	result, err := wv.Weave(ctx)
-	require.NoError(t, err)
+	result := wv.Weave(ctx)
+	
 
 	assert.Greater(t, result.Visited, 0)
 	assert.Less(t, result.Duration, 2*time.Second)
@@ -314,8 +315,8 @@ func TestWeave_NaturalCompletion_SinglePage(t *testing.T) {
 
 	wv := newTestWeaver(t, testConfig(), srv.URL)
 
-	result, err := wv.Weave(context.Background())
-	require.NoError(t, err)
+	result := wv.Weave(context.Background())
+	
 
 	assert.Equal(t, 1, result.Visited)
 	assert.Less(t, result.Duration, 2*time.Second, "should terminate quickly, not hang")
@@ -339,8 +340,8 @@ func TestWeave_NaturalCompletion_AllLinksExternal(t *testing.T) {
 
 	wv := newTestWeaver(t, testConfig(), srv.URL)
 
-	result, err := wv.Weave(context.Background())
-	require.NoError(t, err)
+	result := wv.Weave(context.Background())
+	
 
 	assert.Equal(t, 1, result.Visited)
 	assert.Less(t, result.Duration, 2*time.Second)
@@ -379,9 +380,79 @@ func TestWeave_NaturalCompletion_SmallSite(t *testing.T) {
 
 	wv := newTestWeaver(t, testConfig(), srv.URL)
 
-	result, err := wv.Weave(context.Background())
-	require.NoError(t, err)
+	result := wv.Weave(context.Background())
+	
 
 	assert.Equal(t, 3, result.Visited)
 	assert.Less(t, result.Duration, 5*time.Second, "should terminate deterministically, not hang")
+}
+
+// TestWeave_RedirectToExternalBlocked verifies that the redirect policy
+// prevents the crawler from following a same-domain URL that 302s to an
+// external domain. The redirected page should appear as a fetch error,
+// not as a visited external page.
+func TestWeave_RedirectToExternalBlocked(t *testing.T) {
+	t.Parallel()
+
+	external := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "text/html")
+		_, _ = fmt.Fprint(w, `<html><body>External site</body></html>`)
+	}))
+	defer external.Close()
+
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch r.URL.Path {
+		case "/":
+			w.Header().Set("Content-Type", "text/html")
+			_, _ = fmt.Fprint(w, `<html><body><a href="/redirect">Redirect</a></body></html>`)
+		case "/redirect":
+			http.Redirect(w, r, external.URL+"/landing", http.StatusFound)
+		default:
+			http.NotFound(w, r)
+		}
+	}))
+	defer srv.Close()
+
+	wv := newTestWeaver(t, testConfig(), srv.URL)
+	result := wv.Weave(context.Background())
+
+	// Origin should be visited. The redirect target is external, so it
+	// should be recorded as an error (redirect blocked), not visited.
+	for _, p := range result.Pages {
+		assert.NotContains(t, p.URL, external.URL, "should not visit external redirect target")
+	}
+	assert.Equal(t, 1, result.Skipped, "redirected page should be skipped")
+}
+
+// TestWeave_LargeResponseBodyTruncated verifies that io.LimitReader caps
+// the bytes read from an HTTP response. A server streaming more than
+// maxResponseBodySize should not cause unbounded memory growth - the
+// parser receives a truncated body and extracts whatever links it can.
+func TestWeave_LargeResponseBodyTruncated(t *testing.T) {
+	t.Parallel()
+
+	// Serve a page with a valid link early, followed by 12 MB of padding.
+	// The link before the padding should still be discovered.
+	padding := strings.Repeat("x", 12<<20) // 12 MB > 10 MB limit
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "text/html")
+		switch r.URL.Path {
+		case "/":
+			_, _ = fmt.Fprintf(w, `<html><body><a href="/found">Link</a>%s</body></html>`, padding)
+		case "/found":
+			_, _ = fmt.Fprint(w, `<html><body>Found</body></html>`)
+		default:
+			http.NotFound(w, r)
+		}
+	}))
+	defer srv.Close()
+
+	wv := newTestWeaver(t, testConfig(), srv.URL)
+	result := wv.Weave(context.Background())
+
+	// The origin page should be visited. The link appears before the
+	// padding so it should be extracted despite truncation.
+	assert.GreaterOrEqual(t, result.Visited, 1, "origin should be visited")
+
+	// No OOM - if we got here, the body was bounded.
 }

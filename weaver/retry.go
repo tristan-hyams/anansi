@@ -49,6 +49,8 @@ func withRetry[T any](
 			)
 		}
 
+		// time.After is acceptable here — retry loops are short-lived (≤3 iterations).
+		// For long-lived loops, prefer time.NewTicker (see monitorCompletion).
 		select {
 		case <-time.After(delay):
 		case <-ctx.Done():
