@@ -33,4 +33,12 @@ const (
 	// serverErrorThreshold is the HTTP status code at and above which
 	// responses are considered transient server errors eligible for retry.
 	serverErrorThreshold = 500
+
+	// maxResponseBodySize caps the bytes read from any HTTP response.
+	// Prevents memory exhaustion from misconfigured or malicious servers.
+	// 10 MB is generous for HTML; non-HTML responses are not parsed anyway.
+	maxResponseBodySize int64 = 10 << 20 // 10 MB
+
+	// maxRedirects caps the HTTP redirect chain length per request.
+	maxRedirects = 10
 )

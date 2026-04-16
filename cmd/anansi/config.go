@@ -22,6 +22,7 @@ type AnansiConfig struct {
 	LogLinks    bool          `json:"log_links"`
 	MaxRetries  int           `json:"max_retries"`
 	MaxDuration time.Duration `json:"max_duration"`
+	BufferSize  int           `json:"buffer_size"`
 }
 
 // LoadConfigFromFile reads a JSON config file and returns an AnansiConfig.

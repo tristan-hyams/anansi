@@ -13,4 +13,8 @@ const (
 
 	// xRobotsTagHeader is the HTTP header for per-page robot directives.
 	xRobotsTagHeader = "X-Robots-Tag"
+
+	// maxRobotsBodySize caps the bytes read from a robots.txt response.
+	// robots.txt files are typically a few KB; 1 MB is very generous.
+	maxRobotsBodySize int64 = 1 << 20 // 1 MB
 )

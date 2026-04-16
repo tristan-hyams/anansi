@@ -3,6 +3,7 @@ package weaver
 import (
 	"context"
 	"fmt"
+	"io"
 	"net/http"
 	"net/url"
 	"strings"
@@ -15,6 +16,13 @@ import (
 	"github.com/tristan-hyams/anansi/parser"
 	"github.com/tristan-hyams/anansi/robots"
 )
+
+// readCloser pairs a limited Reader with the original Closer
+// so io.LimitReader doesn't prevent body cleanup.
+type readCloser struct {
+	io.Reader
+	io.Closer
+}
 
 // Crawler is a single worker that fetches and processes pages.
 // Each Crawler runs in its own goroutine, managed by the Weaver.
@@ -80,6 +88,7 @@ func (c *Crawler) processURL(ctx context.Context, fu *frontier.FrontierURL) {
 		w.recordPage(PageResult{URL: pageURL, Depth: fu.Depth, Duration: time.Since(start), Error: err})
 		return
 	}
+	resp.Body = readCloser{io.LimitReader(resp.Body, maxResponseBodySize), resp.Body}
 	defer resp.Body.Close()
 
 	c.handleResponse(ctx, fu, resp, pageURL, start)
@@ -124,58 +133,62 @@ func (c *Crawler) extractAndEnqueue(
 
 	w := c.weaver
 
-	links, err := parser.ExtractLinks(ctx, resp.Body)
+	hrefs, err := parser.ExtractLinks(ctx, resp.Body)
 	if err != nil {
 		w.logger.Warn("link extraction failed", logKeyURL, pageURL, logKeyError, err)
 	}
 
-	foundLinks := c.normalizeLinks(fu.URL, links)
+	resolved := c.resolveLinks(fu.URL, hrefs)
+	foundLinks := urlStrings(resolved)
 
 	if w.cfg.LogLinks {
 		w.logger.Info("crawled",
 			logKeyURL, pageURL,
 			logKeyDepth, fu.Depth,
-			logKeyLinks, len(links),
+			logKeyLinks, len(hrefs),
 			"duration", time.Since(start),
 		)
 	}
 
 	pr := PageResult{
-		URL: pageURL, Links: len(links), FoundLinks: foundLinks, Depth: fu.Depth,
+		URL: pageURL, Links: len(foundLinks), FoundLinks: foundLinks, Depth: fu.Depth,
 		Status: resp.StatusCode, ContentType: ct, Duration: time.Since(start),
 		Error: err,
 	}
 	w.recordPage(pr)
 	w.printPage(pr)
 
-	c.enqueueLinks(ctx, fu, links)
+	c.enqueueLinks(ctx, fu, resolved)
 }
 
-// normalizeLinks resolves raw hrefs to absolute URLs for display.
+// resolveLinks normalizes raw hrefs to absolute URLs once.
 // Unparseable hrefs are silently skipped.
-func (*Crawler) normalizeLinks(base *url.URL, hrefs []string) []string {
-	result := make([]string, 0, len(hrefs))
+func (*Crawler) resolveLinks(base *url.URL, hrefs []string) []*url.URL {
+	result := make([]*url.URL, 0, len(hrefs))
 	for _, raw := range hrefs {
 		normalized, err := normalizer.Normalize(base, raw)
 		if err != nil {
 			continue
 		}
-		result = append(result, normalized.String())
+		result = append(result, normalized)
 	}
 	return result
 }
 
-// enqueueLinks normalizes, filters, and enqueues discovered hrefs.
-func (c *Crawler) enqueueLinks(ctx context.Context, parent *frontier.FrontierURL, hrefs []string) {
+// urlStrings converts resolved URLs to strings for display.
+func urlStrings(urls []*url.URL) []string {
+	s := make([]string, len(urls))
+	for i, u := range urls {
+		s[i] = u.String()
+	}
+	return s
+}
+
+// enqueueLinks filters and enqueues already-normalized URLs.
+func (c *Crawler) enqueueLinks(ctx context.Context, parent *frontier.FrontierURL, links []*url.URL) {
 	w := c.weaver
 
-	for _, raw := range hrefs {
-		normalized, err := normalizer.Normalize(parent.URL, raw)
-		if err != nil {
-			w.logger.Debug("normalize failed, skipping", "href", raw, logKeyError, err)
-			continue
-		}
-
+	for _, normalized := range links {
 		if !normalizer.IsFollowableScheme(normalized) {
 			continue
 		}
@@ -189,7 +202,7 @@ func (c *Crawler) enqueueLinks(ctx context.Context, parent *frontier.FrontierURL
 			continue
 		}
 
-		if err = w.front.Enqueue(ctx, &frontier.FrontierURL{URL: normalized, Depth: parent.Depth + 1}); err != nil {
+		if err := w.front.Enqueue(ctx, &frontier.FrontierURL{URL: normalized, Depth: parent.Depth + 1}); err != nil {
 			return
 		}
 	}

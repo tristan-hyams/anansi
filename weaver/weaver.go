@@ -11,6 +11,7 @@ import (
 	"fmt"
 	"io"
 	"log/slog"
+	"net/http"
 	"net/url"
 	"strings"
 	"sync"
@@ -20,6 +21,7 @@ import (
 	"golang.org/x/time/rate"
 
 	"github.com/tristan-hyams/anansi/frontier"
+	"github.com/tristan-hyams/anansi/normalizer"
 	"github.com/tristan-hyams/anansi/robots"
 	"github.com/tristan-hyams/anansi/webutil"
 )
@@ -82,10 +84,12 @@ func NewWeaver(
 	// the singleton transport. Created once, reused across Weave calls.
 	wv.crawlers = make([]*Crawler, cfg.Workers)
 	for i := range cfg.Workers {
+		client := webutil.NewClient(cfg.Timeout)
+		client.CheckRedirect = wv.redirectPolicy
 		wv.crawlers[i] = &Crawler{
 			id:     uuid.New(),
 			weaver: wv,
-			client: webutil.NewClient(cfg.Timeout),
+			client: client,
 		}
 	}
 
@@ -196,4 +200,19 @@ func (w *Weaver) printPage(pr PageResult) {
 	w.outputMu.Lock()
 	defer w.outputMu.Unlock()
 	_, _ = fmt.Fprint(w.output, sb.String())
+}
+
+// redirectPolicy rejects redirects to external domains and caps the
+// redirect chain length. Prevents the crawler from silently following
+// a same-domain URL that 302s to an off-domain destination.
+func (w *Weaver) redirectPolicy(req *http.Request, via []*http.Request) error {
+	if len(via) >= maxRedirects {
+		return fmt.Errorf("stopped after %d redirects", maxRedirects)
+	}
+
+	if !normalizer.IsSameHost(w.origin, req.URL) {
+		return fmt.Errorf("redirect to external domain %s blocked", req.URL.Host)
+	}
+
+	return nil
 }

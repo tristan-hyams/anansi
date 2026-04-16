@@ -56,6 +56,11 @@ func withRetry[T any](
 		}
 	}
 
+	// Context cancellation takes precedence over the last transient error.
+	if ctx.Err() != nil {
+		return zero, ctx.Err()
+	}
+
 	return zero, fmt.Errorf("%s after %d attempts: %w",
 		cfg.label, maxAttempts, lastErr)
 }

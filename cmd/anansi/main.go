@@ -37,6 +37,7 @@ func main() {
 		LogLinks:    cfg.LogLinks,
 		MaxRetries:  cfg.MaxRetries,
 		MaxDuration: cfg.MaxDuration,
+		BufferSize:  cfg.BufferSize,
 	})
 
 	var output io.Writer = os.Stdout

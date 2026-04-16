@@ -131,6 +131,7 @@ func (f *InMemory) Clear() {
 		case <-f.queue:
 		default:
 			f.visited = sync.Map{}
+			f.pending.Store(0)
 			return
 		}
 	}

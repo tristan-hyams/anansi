@@ -124,7 +124,7 @@ func handleResponse(resp *http.Response, robotsURL string, logger *slog.Logger) 
 // parseBody reads and parses the robots.txt response body.
 func parseBody(resp *http.Response, robotsURL string, logger *slog.Logger) (*Rules, error) {
 
-	body, err := io.ReadAll(resp.Body)
+	body, err := io.ReadAll(io.LimitReader(resp.Body, maxRobotsBodySize))
 	if err != nil {
 		logger.Warn("robots.txt read failed, allowing all", logKeyURL, robotsURL, "error", err)
 		return &Rules{}, nil
