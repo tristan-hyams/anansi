@@ -39,9 +39,10 @@ func main() {
 		MaxDepth:    cfg.MaxDepth,
 		Timeout:     cfg.Timeout,
 		LogLinks:    cfg.LogLinks,
-		MaxRetries:  cfg.MaxRetries,
-		MaxDuration: cfg.MaxDuration,
-		BufferSize:  cfg.BufferSize,
+		MaxRetries:   cfg.MaxRetries,
+		MaxRedirects: cfg.MaxRedirects,
+		MaxDuration:  cfg.MaxDuration,
+		BufferSize:   cfg.BufferSize,
 	})
 
 	var output io.Writer = os.Stdout

@@ -16,6 +16,9 @@ make run ARGS="-workers 5 -rate 10 -max-depth 3"
 # Custom URL
 make run URL=https://example.com/
 
+# Custom URL with tuned settings
+make run URL=https://crawler-test.com/ ARGS="-workers 2 -rate 20 -max-depth 3 -max-retries 1 -log-links=false"
+
 # Both
 make run ARGS="-workers 5 -rate 10" URL=https://example.com/
 
@@ -23,6 +26,7 @@ make run ARGS="-workers 5 -rate 10" URL=https://example.com/
 make build
 bin\anansi.exe https://crawlme.monzo.com/
 bin\anansi.exe -workers 5 -rate 10 -max-depth 3 https://example.com/
+bin\anansi.exe -workers 2 -rate 20 -max-depth 3 https://crawler-test.com/
 
 # Docker (no Go required)
 docker run --rm anansi
@@ -51,13 +55,15 @@ anansi [flags] <url>
 
 ## Output
 
-Every crawl generates two files in the current directory:
+Each crawl writes to a unique directory under `./output/<uuidv7>/`:
 
 | File | Contents |
 |------|----------|
 | `crawl-results.md` | Spider banner, latency stats (P50/P95/P99), status codes, content-type breakdown, page list, sitemap tree |
 | `crawl-results.json` | Machine-readable JSON: same data as markdown, pipeable to `jq` |
 | `crawl-errors.md` | Errors grouped by reason, each URL timestamped (only if errors occurred) |
+
+The output directory path is printed to stderr before the crawl starts.
 
 The terminal shows:
 - **stdout** - each visited URL and its discovered links (when `-log-links` is enabled)
@@ -83,9 +89,9 @@ To capture logs: `bin\anansi.exe https://crawlme.monzo.com/ 2>crawl.log`
 | `main.go` | Entry point - wires config, logger, signal context, weaver, prints summary |
 | `config.go` | `AnansiConfig` struct with JSON serialization, `OriginURL` |
 | `consts.go` | Default flag values, exit codes, error format |
-| `logger.go` | `SetupLogger` - slog JSON handler to stderr |
-| `startup.go` | `ParseFlags`, `SetupSignalContext` |
+| `startup.go` | `ParseFlags`, `SetupSignalContext`, `SetupLogger`, `StartPprofServer` |
 | `config_test.go` | Config unit tests |
+| `startup_test.go` | Logger, signal context, pprof server tests |
 
 ## Exit Codes
 

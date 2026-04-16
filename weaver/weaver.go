@@ -207,8 +207,8 @@ func (w *Weaver) printPage(pr PageResult) {
 // redirect chain length. Prevents the crawler from silently following
 // a same-domain URL that 302s to an off-domain destination.
 func (w *Weaver) redirectPolicy(req *http.Request, via []*http.Request) error {
-	if len(via) >= maxRedirects {
-		return fmt.Errorf("stopped after %d redirects", maxRedirects)
+	if len(via) >= w.cfg.MaxRedirects {
+		return fmt.Errorf("stopped after %d redirects", w.cfg.MaxRedirects)
 	}
 
 	if !normalizer.IsSameHost(w.origin, req.URL) {

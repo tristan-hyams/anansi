@@ -27,6 +27,7 @@ func ParseFlags() (*AnansiConfig, error) {
 	maxRetries := flag.Int("max-retries", defaultMaxRetries,
 		"max retry attempts for transient HTTP errors (-1 = disabled)")
 	maxDuration := flag.Duration("max-duration", 0, "max crawl duration (0 = unlimited, e.g. 60s, 5m)")
+	maxRedirects := flag.Int("max-redirects", 0, "max redirect chain length per request (0 = default 10)")
 	bufferSize := flag.Int("buffer-size", 0, "frontier queue buffer size (0 = default 100000)")
 
 	flag.Usage = func() {
@@ -50,9 +51,10 @@ func ParseFlags() (*AnansiConfig, error) {
 		Origin:   flag.Arg(0),
 		LogLevel: *logLevel,
 		LogLinks:    *logLinks,
-		MaxRetries:  *maxRetries,
-		MaxDuration: *maxDuration,
-		BufferSize:  *bufferSize,
+		MaxRetries:   *maxRetries,
+		MaxRedirects: *maxRedirects,
+		MaxDuration:  *maxDuration,
+		BufferSize:   *bufferSize,
 	}
 
 	if _, err := cfg.OriginURL(); err != nil {

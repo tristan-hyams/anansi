@@ -18,6 +18,9 @@ File → Open Workspace from File → anansi.code-workspace
 # Native (requires Go 1.26+)
 make run
 
+# Custom URL with tuned settings
+make run URL=https://crawler-test.com/ ARGS="-workers 2 -rate 20 -max-depth 3 -max-retries 1 -log-links=false"
+
 # Native run with 10 crawlers, self-rate limited to 5000 req/s, unlimited depth.
 make run ARGS="-workers 10 -rate 5000 -max-depth 0 -log-links=false"
 
@@ -48,13 +51,15 @@ See [cmd/anansi/README.md](cmd/anansi/README.md) for full running examples (Make
 
 ### Output Files
 
-Every crawl generates output files in the current directory:
+Each crawl writes to a unique directory under `./output/<uuidv7>/`:
 
 | File | Contents |
 |------|----------|
 | `crawl-results.md` | Spider banner, latency stats (P50/P95/P99), status codes, content-type breakdown, page list, directory tree sitemap |
 | `crawl-results.json` | Machine-readable JSON: same data as markdown, pipeable to `jq` |
 | `crawl-errors.md` | Errors grouped by reason, each URL timestamped (only created if errors occurred) |
+
+The output directory path is printed to stderr before the crawl starts.
 
 ## Architecture
 

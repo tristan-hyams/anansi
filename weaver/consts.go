@@ -37,8 +37,8 @@ const (
 	// 10 MB is generous for HTML; non-HTML responses are not parsed anyway.
 	maxResponseBodySize int64 = 10 << 20 // 10 MB
 
-	// maxRedirects caps the HTTP redirect chain length per request.
-	maxRedirects = 10
+	// defaultMaxRedirects caps the HTTP redirect chain length per request.
+	defaultMaxRedirects = 10
 
 	// HTTP request headers. Accept-Encoding is intentionally omitted -
 	// Go's transport handles gzip/deflate transparently when unset.

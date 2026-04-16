@@ -20,6 +20,7 @@ type WeaverConfig struct {
 	ProgressInterval int           // URLs between progress checkpoints. NewWeaverConfig defaults to 100.
 	LogLinks         bool          // Print visited URLs and links to stdout.
 	MaxRetries       int           // Retry attempts for transient errors. NewWeaverConfig defaults 0→2, -1=off.
+	MaxRedirects     int           // Max redirect chain length. NewWeaverConfig defaults 0→10.
 	MaxDuration      time.Duration // Max crawl duration. 0 = unlimited.
 }
 
@@ -36,6 +37,10 @@ func NewWeaverConfig(c WeaverConfig) *WeaverConfig {
 
 	if c.MaxRetries == 0 {
 		c.MaxRetries = defaultMaxRetries
+	}
+
+	if c.MaxRedirects == 0 {
+		c.MaxRedirects = defaultMaxRedirects
 	}
 
 	return &c

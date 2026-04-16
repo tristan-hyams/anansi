@@ -13,16 +13,18 @@ import (
 // AnansiConfig holds all crawler configuration. Serializable to/from JSON
 // for file-based config or debugging.
 type AnansiConfig struct {
-	Workers  int           `json:"workers"`
-	Rate     float64       `json:"rate"`
-	MaxDepth int           `json:"max_depth"`
-	Timeout  time.Duration `json:"timeout"`
-	Origin   string        `json:"origin"`
-	LogLevel string        `json:"log_level"`
-	LogLinks    bool          `json:"log_links"`
-	MaxRetries  int           `json:"max_retries"`
-	MaxDuration time.Duration `json:"max_duration"`
-	BufferSize  int           `json:"buffer_size"`
+	Workers    int    `json:"workers"`
+	Origin     string `json:"origin"`
+	LogLevel   string `json:"log_level"`
+	LogLinks   bool   `json:"log_links"`
+	BufferSize int    `json:"buffer_size"`
+
+	Rate         float64       `json:"rate"`
+	Timeout      time.Duration `json:"timeout"`
+	MaxDepth     int           `json:"max_depth"`
+	MaxRedirects int           `json:"max_redirects"`
+	MaxRetries   int           `json:"max_retries"`
+	MaxDuration  time.Duration `json:"max_duration"`
 }
 
 // LoadConfigFromFile reads a JSON config file and returns an AnansiConfig.
