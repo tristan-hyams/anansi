@@ -29,32 +29,33 @@ cmd/anansi (main) → weaver (for WeaverConfig, NewWeaver, Weave)
 anansi/
 ├── cmd/
 │   └── anansi/
-│       ├── main.go              # CLI entry: wiring, summary output
-│       ├── config.go            # AnansiConfig struct, ParseFlags, JSON serialization
+│       ├── main.go              # CLI entry: wiring, fatal(), summary output
+│       ├── config.go            # AnansiConfig struct, JSON serialization
 │       ├── config_test.go       # Config unit tests (package main_test)
-│       ├── consts.go            # Default constants, exit codes, error format
-│       ├── logger.go            # slog JSON handler setup
-│       └── startup.go           # ParseFlags, SetupSignalContext
+│       ├── startup.go           # ParseFlags, SetupSignalContext, SetupLogger, StartPprofServer
+│       ├── startup_test.go      # Logger, signal context, pprof server tests
+│       └── consts.go            # Default constants, exit codes, error format
 ├── weaver/
-│   ├── weaver.go                # Weaver struct, NewWeaver(), Weave(), monitor
-│   ├── crawler.go               # Crawler struct, page fetch pipeline
+│   ├── weaver.go                # Weaver struct, NewWeaver(), Weave(), monitor, redirectPolicy
+│   ├── crawler.go               # Crawler struct, page fetch pipeline, readCloser
 │   ├── retry.go                 # Generic withRetry[T] with exponential backoff
-│   ├── config.go                # WeaverConfig with Validate(), CrawlRate()
-│   ├── config_test.go           # Validation unit tests
+│   ├── retry_test.go            # Retry unit tests (7 cases)
+│   ├── config.go                # WeaverConfig, NewWeaverConfig(), Validate(), CrawlRate()
+│   ├── config_test.go           # Validation + constructor defaults tests
 │   ├── result.go                # Web and PageResult - crawl result data structs
-│   ├── consts.go                # Defaults, log keys, retry constants
+│   ├── consts.go                # Defaults, log keys, retry, body limits, redirect constants
 │   ├── weaver_test.go           # httptest integration tests
 │   └── weaver_integration_test.go # Live test against crawlme.monzo.com
 ├── reporting/
 │   ├── markdown.go              # RenderMarkdown(), RenderErrorLog(), sitemap tree
 │   ├── json.go                  # RenderJSON() - machine-readable JSON output
 │   ├── stats.go                 # ComputeStats(), Stats, LatencyStats, percentiles
-│   ├── writer.go                # WriteOutputFiles() - writes results/JSON/errors to disk
+│   ├── writer.go                # CreateOutputDir(), WriteOutputFiles() - UUIDv7 dirs + file I/O
 │   ├── consts.go                # Banner, summary formatting, output filenames
 │   ├── stats_test.go            # ComputeStats, computeLatency tests
 │   ├── markdown_test.go         # RenderMarkdown, RenderErrorLog tests
 │   ├── json_test.go             # RenderJSON tests
-│   └── writer_test.go           # WriteOutputFiles tests
+│   └── writer_test.go           # WriteOutputFiles, CreateOutputDir tests
 ├── frontier/
 │   ├── frontier.go              # Frontier interface (7 methods), InMemory impl
 │   ├── frontierurl.go           # FrontierURL struct (URL + Depth)
@@ -86,6 +87,7 @@ anansi/
 │   └── stats_bench_test.go      # ComputeStats scaling benchmarks
 ├── testutil/
 │   └── integration.go           # SkipIfNoIntegration helper, .env.test loader
+├── output/                      # Crawl output (gitignored), one UUIDv7 dir per run
 ├── .context/                    # AI agent context (rules, architecture, journal)
 │   ├── RULES.md
 │   ├── STRUCTURE.md             # ← you are here
@@ -118,9 +120,9 @@ anansi/
 
 | Package | Responsibility | Key Types |
 |---|---|---|
-| `cmd/anansi` | CLI entry point. Parses flags, wires weaver, delegates output to reporting. Only place that calls `os.Exit`. | `main()`, `AnansiConfig`, `ParseFlags()`, `OriginURL()` |
-| `weaver` | Orchestrates the crawl. Owns frontier, rate limiter, robots rules. Pre-creates Crawlers. | `Weaver`, `Crawler`, `WeaverConfig`, `Web`, `PageResult` |
-| `reporting` | Rendering and file output. Converts `Web` results to markdown, JSON, error logs. Writes output files. | `RenderMarkdown()`, `RenderJSON()`, `RenderErrorLog()`, `ComputeStats()`, `WriteOutputFiles()` |
+| `cmd/anansi` | CLI entry point. Parses flags, wires weaver, delegates output to reporting. Only place that calls `os.Exit`. | `main()`, `AnansiConfig`, `ParseFlags()`, `SetupLogger()` |
+| `weaver` | Orchestrates the crawl. Owns frontier, rate limiter, robots rules, redirect policy. Pre-creates Crawlers with body size limits. | `Weaver`, `Crawler`, `NewWeaverConfig()`, `WeaverConfig`, `Web`, `PageResult` |
+| `reporting` | Crawl report rendering and output. Creates per-run output directories (UUIDv7). Converts `Web` results to markdown, JSON, error logs. | `CreateOutputDir()`, `RenderMarkdown()`, `RenderJSON()`, `RenderErrorLog()`, `ComputeStats()`, `WriteOutputFiles()` |
 | `frontier` | URL queue + visited tracking + pending counter. Interface-based for swappability. | `Frontier` (7 methods), `InMemory`, `FrontierURL` |
 | `parser` | Extracts `<a href>` links from HTML using tokenizer. No URL filtering - returns raw hrefs. | `ExtractLinks(ctx, r io.Reader) ([]string, error)` |
 | `normalizer` | Canonicalizes URLs: strips fragments, lowercases host, resolves relative paths. Pure functions. | `Normalize(base, raw)`, `IsSameHost(origin, candidate)`, `IsFollowableScheme(u)` |
