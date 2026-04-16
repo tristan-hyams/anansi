@@ -78,7 +78,7 @@ func (f *InMemory) Enqueue(ctx context.Context, fu *FrontierURL) error {
 	key := fu.URL.String()
 
 	if _, loaded := f.visited.LoadOrStore(key, true); loaded {
-		f.logger.Debug(fmt.Sprintf("url [%s] already visited, skipping", key))
+		f.logger.Debug("url already visited, skipping", "url", key)
 		return nil
 	}
 

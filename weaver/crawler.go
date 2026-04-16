@@ -65,14 +65,13 @@ func (c *Crawler) processURL(ctx context.Context, fu *frontier.FrontierURL) {
 	}
 	defer resp.Body.Close()
 
-	c.handleResponse(ctx, fu, resp, start)
+	c.handleResponse(ctx, fu, resp, pageURL, start)
 }
 
 // handleResponse processes a successful HTTP response.
-func (c *Crawler) handleResponse(ctx context.Context, fu *frontier.FrontierURL, resp *http.Response, start time.Time) {
+func (c *Crawler) handleResponse(ctx context.Context, fu *frontier.FrontierURL, resp *http.Response, pageURL string, start time.Time) {
 
 	w := c.weaver
-	pageURL := fu.URL.String()
 	ct := resp.Header.Get("Content-Type")
 
 	w.logger.Debug("fetched", logKeyURL, pageURL, "status", resp.StatusCode)
@@ -114,6 +113,7 @@ func (c *Crawler) handleResponse(ctx context.Context, fu *frontier.FrontierURL, 
 	w.recordPage(PageResult{
 		URL: pageURL, Links: len(links), Depth: fu.Depth,
 		Status: resp.StatusCode, ContentType: ct, Duration: time.Since(start),
+		Error: err,
 	})
 
 	c.enqueueLinks(ctx, fu, links)

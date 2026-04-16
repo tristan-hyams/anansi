@@ -24,8 +24,7 @@ type Frontier interface {
 |------|---------|
 | `Frontier` | Interface — queue + dedup + completion tracking |
 | `InMemory` | Implementation — buffered channel + `sync.Map` + `atomic.Int32` pending counter |
-| `FrontierURL` | URL wrapper with `Depth`, `Status`, `Err`, `ContentType` metadata |
-| `Status` | Enum: `StatusPending`, `StatusVisited`, `StatusError` |
+| `FrontierURL` | URL wrapper with `Depth` metadata |
 
 ## Design Notes
 
