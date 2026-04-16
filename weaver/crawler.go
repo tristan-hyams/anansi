@@ -198,48 +198,26 @@ func (c *Crawler) enqueueLinks(ctx context.Context, parent *frontier.FrontierURL
 // fetchPage performs an HTTP GET with retry on transient errors.
 // Transient: connection reset, timeout, 5xx. Non-retryable: 4xx, context cancelled.
 func (c *Crawler) fetchPage(ctx context.Context, u *url.URL) (*http.Response, error) {
-	maxAttempts := c.weaver.cfg.MaxRetries + 1
-	if maxAttempts < 1 {
-		maxAttempts = 1 // MaxRetries=-1 means no retries, 1 attempt
-	}
 
-	var lastErr error
-	for attempt := range maxAttempts {
+	return withRetry(ctx, retryConfig{
+		maxRetries: c.weaver.cfg.MaxRetries,
+		baseDelay:  baseRetryDelay,
+		logger:     c.weaver.logger,
+		label:      u.String(),
+	}, func() (*http.Response, error, bool) {
+
 		resp, err := c.doRequest(ctx, u)
-
-		if err == nil && resp.StatusCode < serverErrorThreshold {
-			return resp, nil
+		if err != nil {
+			return nil, err, true // network error — retryable
 		}
 
-		// Close body on 5xx before retrying to avoid resource leak.
-		if resp != nil {
-			resp.Body.Close()
-			lastErr = fmt.Errorf("HTTP %d from %s", resp.StatusCode, u)
-		} else {
-			lastErr = err
+		if resp.StatusCode >= serverErrorThreshold {
+			_ = resp.Body.Close()
+			return nil, fmt.Errorf("HTTP %d from %s", resp.StatusCode, u), true
 		}
 
-		// Don't retry if context is done or this was the last attempt.
-		if ctx.Err() != nil || attempt == maxAttempts-1 {
-			break
-		}
-
-		delay := baseRetryDelay << attempt // 500ms, 1s, 2s, ...
-		c.weaver.logger.Warn("retrying transient error",
-			logKeyURL, u.String(),
-			"attempt", attempt+1,
-			"delay", delay,
-			logKeyError, lastErr,
-		)
-
-		select {
-		case <-time.After(delay):
-		case <-ctx.Done():
-			return nil, ctx.Err()
-		}
-	}
-
-	return nil, fmt.Errorf("fetching %s after %d attempts: %w", u, maxAttempts, lastErr)
+		return resp, nil, false
+	})
 }
 
 // doRequest executes a single HTTP GET.

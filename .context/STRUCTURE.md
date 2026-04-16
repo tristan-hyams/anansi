@@ -38,9 +38,11 @@ anansi/
 ├── weaver/
 │   ├── weaver.go                # Weaver struct, NewWeaver(), Weave(), monitor
 │   ├── crawler.go               # Crawler struct, page fetch pipeline
+│   ├── retry.go                 # Generic withRetry[T] with exponential backoff
 │   ├── config.go                # WeaverConfig with Validate(), CrawlRate()
+│   ├── config_test.go           # Validation unit tests
 │   ├── result.go                # Web and PageResult - crawl result data structs
-│   ├── consts.go                # Defaults, log keys, error sentinels
+│   ├── consts.go                # Defaults, log keys, retry constants
 │   ├── weaver_test.go           # httptest integration tests
 │   └── weaver_integration_test.go # Live test against crawlme.monzo.com
 ├── fileutil/
@@ -77,6 +79,11 @@ anansi/
 │   ├── transport.go             # Singleton Transport(), NewClient()
 │   ├── transport_test.go        # Singleton and client tests
 │   └── consts.go                # Dial, TLS, pool, timeout settings
+├── benchmark/
+│   ├── normalizer_bench_test.go # Normalize, IsSameHost benchmarks
+│   ├── parser_bench_test.go     # ExtractLinks small/large benchmarks
+│   ├── frontier_bench_test.go   # Enqueue, Dequeue throughput benchmarks
+│   └── stats_bench_test.go      # ComputeStats scaling benchmarks
 ├── testutil/
 │   └── integration.go           # SkipIfNoIntegration helper, .env.test loader
 ├── .context/                    # AI agent context (rules, architecture, journal)
@@ -90,6 +97,7 @@ anansi/
 ├── .github/
 │   └── copilot-instructions.md  # GitHub Copilot shim → points to .context/
 ├── AGENTS.md                    # Codex/agent shim → points to .context/
+├── BENCHMARK.md                 # Benchmark suite, pprof usage, profiling targets
 ├── DESIGN.md                    # Design decisions, trade-offs, rationale
 ├── TESTING.md                   # Test strategy, integration tests, race detector
 ├── PLAN.md                      # Phased implementation plan

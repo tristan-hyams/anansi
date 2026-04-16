@@ -43,8 +43,10 @@ anansi [flags] <url>
   -rate float       Max requests per second (default 1)
   -max-depth int    Maximum crawl depth, 0 for unlimited (default 1)
   -timeout duration HTTP request timeout (default 30s)
-  -log-level string Log level: debug, info, warn, error (default "info")
-  -log-links        Print each visited URL and its links to stdout (default true)
+  -log-level string    Log level: debug, info, warn, error (default "info")
+  -log-links           Print each visited URL and its links to stdout (default true)
+  -max-retries int     Max retry attempts for transient errors (default 2, -1 = disabled)
+  -max-duration dur    Max crawl duration, 0 for unlimited (e.g. 60s, 5m)
 ```
 
 ## Output
@@ -72,6 +74,7 @@ To capture logs: `bin\anansi.exe https://crawlme.monzo.com/ 2>crawl.log`
 - Signal handling for graceful shutdown (`SetupSignalContext`)
 - Wiring `weaver.NewWeaver()` → `weaver.Weave()`
 - Delegating output to `fileutil.WriteOutputFiles()`
+- pprof debug server (`ANANSI_DEBUG=1`)
 
 ## Files
 

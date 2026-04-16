@@ -23,8 +23,9 @@ web, err := wv.Weave(ctx)
 ## Page Fetch Pipeline
 
 ```
-Dequeue → max depth check → rate limit → HTTP GET → Content-Type check
-  → X-Robots-Tag check → parse links → normalize/filter → enqueue
+Dequeue → max depth check → rate limit → HTTP GET (with retry)
+  → Content-Type check → X-Robots-Tag check → parse links
+  → normalize/filter → enqueue
 ```
 
 ## Files
@@ -33,9 +34,11 @@ Dequeue → max depth check → rate limit → HTTP GET → Content-Type check
 |------|---------|
 | `weaver.go` | `Weaver` struct, `NewWeaver()`, `Weave()`, monitor, result building |
 | `crawler.go` | `Crawler` struct, page processing, link filtering, HTTP fetch |
+| `retry.go` | Generic `withRetry[T]` with exponential backoff |
 | `config.go` | `WeaverConfig` with `Validate()`, `CrawlRate(rules)` |
+| `config_test.go` | Validation unit tests |
 | `result.go` | `Web` and `PageResult` - crawl result data structs |
-| `consts.go` | Defaults, log keys, error sentinels |
+| `consts.go` | Defaults, log keys, error sentinels, retry constants |
 
 ## Termination
 

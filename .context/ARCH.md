@@ -18,9 +18,9 @@ Built as a take-home challenge demonstrating: concurrency design, software struc
 
 ```
                     ┌──────────┐
-   Enqueue ───────► │ Buffered │ ──────► Worker 1 ──► HTTP GET ──► Parse ──► Enqueue new URLs
-                    │ Channel  │ ──────► Worker 2 ──► ...
-                    │ (queue)  │ ──────► Worker N ──► ...
+   Enqueue ───────► │ Buffered │ ──────► Crawler 1 ──► HTTP GET (retry) ──► Parse ──► Enqueue
+                    │ Channel  │ ──────► Crawler 2 ──► ...
+                    │ (queue)  │ ──────► Crawler N ──► ...
                     └──────────┘
                          ▲
                          │
@@ -43,11 +43,12 @@ The buffered channel is functionally equivalent to a message queue. In a product
 
 ## Termination
 
-Two distinct code paths:
+Three distinct code paths:
 
 | Condition | Trigger | Behaviour |
 |---|---|---|
 | Natural completion | `frontier.IsDone()` returns true (pending counter at 0, queue empty) | Monitor cancels crawl context, Crawlers exit, summary written |
+| Max duration | `context.WithTimeout` via `-max-duration` flag | Context expires, Crawlers exit, partial results written |
 | Signal interrupt | SIGINT/SIGTERM via `signal.NotifyContext` | Cancel context, Crawlers exit via `ctx.Done()`, partial results written |
 
 ---
@@ -59,7 +60,7 @@ Dequeue URL from frontier
   │
   ├─ Rate limiter wait
   │
-  ├─ HTTP GET
+  ├─ HTTP GET (with retry on transient errors: connection reset, 5xx)
   │
   ├─ Check Content-Type ──► only parse text/html
   │
@@ -138,6 +139,7 @@ Example from crawlme.monzo.com: `X-Robots-Tag: noindex,follow` - don't index, bu
 | Distributed crawling | Not implemented | Single-process design. Architecture supports future sharding via frontier partitioning. |
 | Sitemap.xml parsing | Not implemented | Spec doesn't require it. Would be a complementary URL discovery source. |
 | Depth limiting | Configurable | Default uncapped. Flag `--max-depth` available. Dedup via seen-set prevents infinite loops regardless. |
+| Duration limiting | Configurable | Flag `--max-duration`. 0 = unlimited. Prevents runaway crawls against infinite/procedurally-generated sites. |
 
 ---
 
@@ -146,3 +148,26 @@ Example from crawlme.monzo.com: `X-Robots-Tag: noindex,follow` - don't index, bu
 Crawl results (`Web` struct) are plain data. All rendering - markdown summary, JSON output, error logs, statistics - lives in the `fileutil` package, not in the weaver. This separation keeps the orchestrator focused on crawling and makes output formats independently testable.
 
 Output files are written by `fileutil.WriteOutputFiles()`, called from the CLI after the crawl completes.
+
+---
+
+## Retry & Error Recovery
+
+HTTP GET uses a generic `withRetry[T]` function wrapping `fetchPage`. Exponential backoff (500ms, 1s, 2s) on transient errors:
+
+- **Connection reset** (`wsarecv: An existing connection was forcibly closed`) — retryable
+- **5xx server errors** — retryable (body closed before retry to avoid leak)
+- **4xx client errors** — not retryable (returned immediately)
+- **Context cancellation** — not retryable (crawl is shutting down)
+
+Configurable via `-max-retries` (default 2). Set to `-1` to disable retries entirely.
+
+The `withRetry` function is generic (`withRetry[T any]`) — reusable for any operation that returns `(T, error, retryable bool)`.
+
+---
+
+## Profiling & Benchmarks
+
+pprof debug server available via `ANANSI_DEBUG=1` on `localhost:6060`. Benchmark suite in `benchmark/` covers hot-path functions: normalizer, parser, frontier, stats.
+
+See [BENCHMARK.md](../BENCHMARK.md) for full details.

@@ -39,7 +39,7 @@ Dequeue URL from frontier
   │
   ├─ Rate limiter wait
   │
-  ├─ HTTP GET
+  ├─ HTTP GET (with retry on transient errors: connection reset, 5xx)
   │
   ├─ Check Content-Type ──► only parse text/html
   │
@@ -73,6 +73,7 @@ The spec says "limited to one subdomain." Strict matching is the safe interpreta
 | Condition | Trigger | Behaviour |
 |---|---|---|
 | Natural completion | `frontier.IsDone()` returns true (pending counter at 0, queue empty) | Monitor cancels crawl context, Crawlers exit, summary written |
+| Max duration | `context.WithTimeout` via `-max-duration` flag | Context expires, Crawlers exit, partial results written |
 | Signal interrupt | SIGINT/SIGTERM via `signal.NotifyContext` | Cancel context, Crawlers exit via `ctx.Done()`, partial results written |
 
 ## Robot Compliance
@@ -127,7 +128,7 @@ Rendering is separated from the crawl orchestrator — the `fileutil` package co
 | Buffered channel as queue | Simple, fast, in-process — but no restart durability or distributed fanout |
 | robots.txt 403 as not found | Pragmatic for CDN hosts, but could mask genuine access restrictions |
 | Normalize before dedup | Prevents visiting `/About` and `/about` twice, but normalizer must be correct or the crawler misses pages |
-| Retry/Exponential Backoff | Definitely easily configurable and should be added for transient network issues. | 
+| Retry with exponential backoff | Generic `withRetry[T]` wraps `fetchPage`. Recovers from transient errors (connection resets, 5xx) but adds latency on genuine failures. Configurable via `-max-retries`, disabled with `-1`. |
 
 ## Rejected Patterns
 
