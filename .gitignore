@@ -33,9 +33,7 @@ Thumbs.db
 .docker/
 
 # Crawl output
-crawl-results.md
-crawl-results.json
-crawl-errors.md
+output/
 
 # Build
 dist/

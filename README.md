@@ -62,9 +62,9 @@ Worker pool with a buffered channel as the work queue. Global token-bucket rate 
 
 | Package | Responsibility | Details |
 |---|---|---|
-| [`cmd/anansi`](cmd/anansi/README.md) | CLI entry point, flag parsing | Wires weaver and fileutil |
+| [`cmd/anansi`](cmd/anansi/README.md) | CLI entry point, flag parsing | Wires weaver and reporting |
 | [`weaver`](weaver/README.md) | Orchestrator | Spawns Crawlers, owns frontier and rate limiter |
-| [`fileutil`](fileutil/README.md) | Rendering and file output | Markdown, JSON, error logs, stats |
+| [`reporting`](reporting/README.md) | Rendering and file output | Markdown, JSON, error logs, stats |
 | [`frontier`](frontier/README.md) | URL queue + visited tracking | Interface-based, swappable backend |
 | [`parser`](parser/README.md) | HTML link extraction | `x/net/html` tokenizer |
 | [`normalizer`](normalizer/README.md) | URL canonicalization | Pure functions, zero dependencies |

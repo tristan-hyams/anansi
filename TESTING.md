@@ -34,11 +34,11 @@ CGO_ENABLED=1 go test -race ./...
 
 | Approach | Packages |
 |----------|----------|
-| Table-driven unit tests | `normalizer`, `parser`, `robots`, `fileutil` |
+| Table-driven unit tests | `normalizer`, `parser`, `robots`, `reporting` |
 | `httptest.NewServer` with canned HTML | `weaver`, `robots` |
 | HTML fixtures in `testdata/` | `parser` |
 | Singleton/transport assertions | `webutil` |
-| Temp directory file I/O | `fileutil` (writer) |
+| Temp directory file I/O | `reporting` (writer) |
 | Live network integration | `parser`, `robots`, `weaver` |
 
 ## Test Categories (`parser/testdata/`)

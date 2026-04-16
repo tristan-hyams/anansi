@@ -145,9 +145,9 @@ Example from crawlme.monzo.com: `X-Robots-Tag: noindex,follow` - don't index, bu
 
 ## Output Rendering
 
-Crawl results (`Web` struct) are plain data. All rendering - markdown summary, JSON output, error logs, statistics - lives in the `fileutil` package, not in the weaver. This separation keeps the orchestrator focused on crawling and makes output formats independently testable.
+Crawl results (`Web` struct) are plain data. All rendering - markdown summary, JSON output, error logs, statistics - lives in the `reporting` package, not in the weaver. This separation keeps the orchestrator focused on crawling and makes output formats independently testable.
 
-Output files are written by `fileutil.WriteOutputFiles()`, called from the CLI after the crawl completes.
+Output files are written by `reporting.WriteOutputFiles()`, called from the CLI after the crawl completes.
 
 ---
 

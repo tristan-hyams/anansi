@@ -11,7 +11,7 @@ wv, err := weaver.NewWeaver(ctx, cfg, originURL, logger)
 web, err := wv.Weave(ctx)
 
 // web.Visited, web.Skipped, web.Duration, web.Pages - plain data
-// Rendering and file output live in the fileutil package.
+// Rendering and file output live in the reporting package.
 ```
 
 ## Architecture

@@ -1,8 +1,9 @@
-package fileutil
+package reporting
 
 import (
 	"bytes"
 	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 	"time"
@@ -10,23 +11,10 @@ import (
 	"github.com/tristan-hyams/anansi/weaver"
 )
 
-// chdirTemp changes to a temp directory and restores on cleanup.
-func chdirTemp(t *testing.T) {
-	t.Helper()
-	dir := t.TempDir()
-	origDir, err := os.Getwd()
-	if err != nil {
-		t.Fatalf("getwd: %v", err)
-	}
-	if err := os.Chdir(dir); err != nil {
-		t.Fatalf("chdir: %v", err)
-	}
-	t.Cleanup(func() { _ = os.Chdir(origDir) })
-}
-
 func TestWriteOutputFiles_CreatesFiles(t *testing.T) {
-	chdirTemp(t)
+	t.Parallel()
 
+	dir := t.TempDir()
 	web := &weaver.Web{
 		Visited:   1,
 		OriginURL: "https://example.com/",
@@ -41,15 +29,15 @@ func TestWriteOutputFiles_CreatesFiles(t *testing.T) {
 	}
 
 	var stderr bytes.Buffer
-	if err := WriteOutputFiles(web, &stderr); err != nil {
+	if err := WriteOutputFiles(web, dir, &stderr); err != nil {
 		t.Fatalf("WriteOutputFiles failed: %v", err)
 	}
 
-	assertFileNotEmpty(t, outputResultsFile)
-	assertFileNotEmpty(t, outputJSONFile)
+	assertFileNotEmpty(t, filepath.Join(dir, outputResultsFile))
+	assertFileNotEmpty(t, filepath.Join(dir, outputJSONFile))
 
 	// No errors, so error file should not exist.
-	if _, err := os.Stat(outputErrorsFile); err == nil {
+	if _, err := os.Stat(filepath.Join(dir, outputErrorsFile)); err == nil {
 		t.Fatal("error file should not exist when there are no errors")
 	}
 
@@ -59,8 +47,9 @@ func TestWriteOutputFiles_CreatesFiles(t *testing.T) {
 }
 
 func TestWriteOutputFiles_CreatesErrorFile(t *testing.T) {
-	chdirTemp(t)
+	t.Parallel()
 
+	dir := t.TempDir()
 	web := &weaver.Web{
 		Skipped:   1,
 		OriginURL: "https://example.com/",
@@ -74,11 +63,37 @@ func TestWriteOutputFiles_CreatesErrorFile(t *testing.T) {
 	}
 
 	var stderr bytes.Buffer
-	if err := WriteOutputFiles(web, &stderr); err != nil {
+	if err := WriteOutputFiles(web, dir, &stderr); err != nil {
 		t.Fatalf("WriteOutputFiles failed: %v", err)
 	}
 
-	assertFileNotEmpty(t, outputErrorsFile)
+	assertFileNotEmpty(t, filepath.Join(dir, outputErrorsFile))
+}
+
+func TestCreateOutputDir(t *testing.T) {
+	t.Parallel()
+
+	origDir, _ := os.Getwd()
+	tmpDir := t.TempDir()
+	_ = os.Chdir(tmpDir)
+	t.Cleanup(func() { _ = os.Chdir(origDir) })
+
+	dir, err := CreateOutputDir()
+	if err != nil {
+		t.Fatalf("CreateOutputDir failed: %v", err)
+	}
+
+	if !strings.HasPrefix(dir, "output") {
+		t.Fatalf("expected dir under output/, got %s", dir)
+	}
+
+	info, err := os.Stat(dir)
+	if err != nil {
+		t.Fatalf("output dir does not exist: %v", err)
+	}
+	if !info.IsDir() {
+		t.Fatal("output path is not a directory")
+	}
 }
 
 func assertFileNotEmpty(t *testing.T, path string) {

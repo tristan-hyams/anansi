@@ -15,7 +15,7 @@ Top-level packages are public - importable as libraries by external consumers.
 ## Dependency Direction
 
 ```
-cmd/anansi (main) → fileutil → weaver → (frontier, parser, normalizer, robots, webutil)
+cmd/anansi (main) → reporting → weaver → (frontier, parser, normalizer, robots, webutil)
 cmd/anansi (main) → weaver (for WeaverConfig, NewWeaver, Weave)
 ```
 
@@ -45,7 +45,7 @@ anansi/
 │   ├── consts.go                # Defaults, log keys, retry constants
 │   ├── weaver_test.go           # httptest integration tests
 │   └── weaver_integration_test.go # Live test against crawlme.monzo.com
-├── fileutil/
+├── reporting/
 │   ├── markdown.go              # RenderMarkdown(), RenderErrorLog(), sitemap tree
 │   ├── json.go                  # RenderJSON() - machine-readable JSON output
 │   ├── stats.go                 # ComputeStats(), Stats, LatencyStats, percentiles
@@ -118,9 +118,9 @@ anansi/
 
 | Package | Responsibility | Key Types |
 |---|---|---|
-| `cmd/anansi` | CLI entry point. Parses flags, wires weaver, delegates output to fileutil. Only place that calls `os.Exit`. | `main()`, `AnansiConfig`, `ParseFlags()`, `OriginURL()` |
+| `cmd/anansi` | CLI entry point. Parses flags, wires weaver, delegates output to reporting. Only place that calls `os.Exit`. | `main()`, `AnansiConfig`, `ParseFlags()`, `OriginURL()` |
 | `weaver` | Orchestrates the crawl. Owns frontier, rate limiter, robots rules. Pre-creates Crawlers. | `Weaver`, `Crawler`, `WeaverConfig`, `Web`, `PageResult` |
-| `fileutil` | Rendering and file output. Converts `Web` results to markdown, JSON, error logs. Writes output files. | `RenderMarkdown()`, `RenderJSON()`, `RenderErrorLog()`, `ComputeStats()`, `WriteOutputFiles()` |
+| `reporting` | Rendering and file output. Converts `Web` results to markdown, JSON, error logs. Writes output files. | `RenderMarkdown()`, `RenderJSON()`, `RenderErrorLog()`, `ComputeStats()`, `WriteOutputFiles()` |
 | `frontier` | URL queue + visited tracking + pending counter. Interface-based for swappability. | `Frontier` (7 methods), `InMemory`, `FrontierURL` |
 | `parser` | Extracts `<a href>` links from HTML using tokenizer. No URL filtering - returns raw hrefs. | `ExtractLinks(ctx, r io.Reader) ([]string, error)` |
 | `normalizer` | Canonicalizes URLs: strips fragments, lowercases host, resolves relative paths. Pure functions. | `Normalize(base, raw)`, `IsSameHost(origin, candidate)`, `IsFollowableScheme(u)` |

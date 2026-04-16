@@ -38,7 +38,7 @@ Apply judgment. These describe *why* - use them to reason about novel situations
 |---|---|
 | Go version | 1.26+ (latest stable) |
 | Module path | `github.com/tristan-hyams/anansi` |
-| Package layout | Top-level packages (`weaver/`, `fileutil/`, `frontier/`, `parser/`, `normalizer/`, `robots/`, `webutil/`, `testutil/`). No `internal/`. |
+| Package layout | Top-level packages (`weaver/`, `reporting/`, `frontier/`, `parser/`, `normalizer/`, `robots/`, `webutil/`, `testutil/`). No `internal/`. |
 | Testing | `go test -cover ./...` - race detector enabled in CI/Docker where CGO is available |
 | Linting | `revive -config revive.toml ./...` |
 | Build | `CGO_ENABLED=0 go build -o bin/anansi ./cmd/anansi` |

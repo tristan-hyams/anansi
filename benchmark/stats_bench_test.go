@@ -5,7 +5,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/tristan-hyams/anansi/fileutil"
+	"github.com/tristan-hyams/anansi/reporting"
 	"github.com/tristan-hyams/anansi/weaver"
 )
 
@@ -29,7 +29,7 @@ func BenchmarkComputeStats_1k(b *testing.B) {
 	web := &weaver.Web{Pages: generatePages(1_000)}
 	b.ResetTimer()
 	for b.Loop() {
-		fileutil.ComputeStats(web)
+		reporting.ComputeStats(web)
 	}
 }
 
@@ -37,6 +37,6 @@ func BenchmarkComputeStats_10k(b *testing.B) {
 	web := &weaver.Web{Pages: generatePages(10_000)}
 	b.ResetTimer()
 	for b.Loop() {
-		fileutil.ComputeStats(web)
+		reporting.ComputeStats(web)
 	}
 }

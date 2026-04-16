@@ -5,16 +5,21 @@ import (
 	"io"
 	"os"
 
-	"github.com/tristan-hyams/anansi/fileutil"
+	"github.com/tristan-hyams/anansi/reporting"
 	"github.com/tristan-hyams/anansi/weaver"
 )
+
+func fatal(err error) {
+	_, _ = fmt.Fprintf(os.Stderr, errFmt, err)
+	//revive:disable-next-line:deep-exit CLI helper in main package.
+	os.Exit(exitCodeError)
+}
 
 func main() {
 
 	cfg, err := ParseFlags()
 	if err != nil {
-		_, _ = fmt.Fprintf(os.Stderr, errFmt, err)
-		os.Exit(exitCodeError)
+		fatal(err)
 	}
 
 	logger := SetupLogger(cfg)
@@ -25,8 +30,7 @@ func main() {
 
 	origin, err := cfg.OriginURL()
 	if err != nil {
-		_, _ = fmt.Fprintf(os.Stderr, errFmt, err)
-		os.Exit(exitCodeError)
+		fatal(err)
 	}
 
 	weaverCfg := weaver.NewWeaverConfig(weaver.WeaverConfig{
@@ -45,6 +49,13 @@ func main() {
 		output = io.Discard
 	}
 
+	outputDir, err := reporting.CreateOutputDir()
+	if err != nil {
+		fatal(err)
+	}
+
+	_, _ = fmt.Fprintf(os.Stderr, "results will be written to %s\n", outputDir)
+
 	logger.Info(
 		fmt.Sprintf("crawl starting for [%s]", cfg.Origin),
 		"origin", cfg.Origin,
@@ -52,26 +63,23 @@ func main() {
 		"rate", cfg.Rate,
 		"max_depth", cfg.MaxDepth,
 		"timeout", cfg.Timeout,
+		"output_dir", outputDir,
 	)
 
 	wv, err := weaver.NewWeaver(ctx, weaverCfg, origin, logger, output)
 	if err != nil {
-		_, _ = fmt.Fprintf(os.Stderr, errFmt, err)
-		os.Exit(exitCodeError)
+		fatal(err)
 	}
 
 	web, err := wv.Weave(ctx)
 	if err != nil {
-		_, _ = fmt.Fprintf(os.Stderr, errFmt, err)
-		os.Exit(exitCodeError)
+		fatal(err)
 	}
 
-	if err := fileutil.WriteOutputFiles(web, os.Stderr); err != nil {
-		_, _ = fmt.Fprintf(os.Stderr, errFmt, err)
-		os.Exit(exitCodeError)
+	if err := reporting.WriteOutputFiles(web, outputDir, os.Stderr); err != nil {
+		fatal(err)
 	}
 
-	// Short terminal summary - full report is in the files.
 	_, _ = fmt.Fprintf(os.Stderr,
 		"\ncrawl complete: %d pages crawled, %d skipped, %s\n",
 		web.Visited, web.Skipped, web.Duration.Round(summaryDurationRound),

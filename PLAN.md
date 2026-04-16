@@ -184,14 +184,14 @@ CLI entry point. Thin - all logic lives in packages.
 
 Completed after the initial implementation. Not part of the original plan.
 
-- [x] Extract rendering + file output into `fileutil` package (was on `weaver.Web` methods)
+- [x] Extract rendering + file output into `reporting` package (was on `weaver.Web` methods)
 - [x] Add UUID ID to each Crawler with start/stop lifecycle logging
 - [x] Record parse errors on `PageResult` (was silently logged)
 - [x] Remove dead `Status`/`Err` fields from `FrontierURL` + delete `enums.go`
 - [x] Add `webutil` unit tests (was 0% coverage)
 - [x] Fix `fmt.Sprintf` allocation in frontier debug log
 - [x] Pass `pageURL` as parameter to `handleResponse` (was computed twice)
-- [x] Add `fileutil` unit tests: stats, markdown, JSON, writer
+- [x] Add `reporting` unit tests: stats, markdown, JSON, writer
 
 **Exit criteria:** Submission-ready. Clean lint, good coverage, working Docker, clear README, documented decisions.
 

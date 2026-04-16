@@ -115,7 +115,7 @@ Disable with `-log-links=false` for a much quieter operation during development.
 | `crawl-results.json` | Machine-readable JSON with per-page found links, pipeable to `jq` |
 | `crawl-errors.md` | Errors grouped by reason, each URL timestamped (only if errors occurred) |
 
-Rendering is separated from the crawl orchestrator — the `fileutil` package converts plain `Web` result data into all output formats.
+Rendering is separated from the crawl orchestrator — the `reporting` package converts plain `Web` result data into all output formats.
 
 ## Design Trade-offs
 
