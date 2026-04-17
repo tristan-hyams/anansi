@@ -5,9 +5,6 @@ import "time"
 const (
 	logKeyURL = "url"
 
-	// userAgent identifies Anansi in robots.txt requests per RFC 9309.
-	userAgent = "Anansi"
-
 	// fetchTimeout is the HTTP timeout for the robots.txt request.
 	fetchTimeout = 10 * time.Second
 
@@ -17,4 +14,9 @@ const (
 	// maxRobotsBodySize caps the bytes read from a robots.txt response.
 	// robots.txt files are typically a few KB; 1 MB is very generous.
 	maxRobotsBodySize int64 = 1 << 20 // 1 MB
+
+	// TODO: Duplicate consts, better centralized in a shared package with weaver.
+	defaultUserAgent     = "Anansi Weaver; Go 1.26;"
+	acceptHeader         = "text/html, */*;q=0.8"
+	acceptLanguageHeader = "en"
 )

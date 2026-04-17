@@ -164,17 +164,21 @@ func (c *Crawler) extractAndEnqueue(
 // resolveLinks normalizes raw hrefs to deduplicated absolute URLs.
 // Unparseable and duplicate hrefs are silently skipped.
 func (*Crawler) resolveLinks(base *url.URL, hrefs []string) []*url.URL {
+
 	seen := make(map[string]struct{}, len(hrefs))
 	result := make([]*url.URL, 0, len(hrefs))
+
 	for _, raw := range hrefs {
 		normalized, err := normalizer.Normalize(base, raw)
 		if err != nil {
 			continue
 		}
+
 		key := normalized.String()
 		if _, exists := seen[key]; exists {
 			continue
 		}
+
 		seen[key] = struct{}{}
 		result = append(result, normalized)
 	}

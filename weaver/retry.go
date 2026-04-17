@@ -21,11 +21,12 @@ type retryConfig struct {
 // fn returns a result, an error, and whether the error is retryable.
 // On non-retryable errors or context cancellation, returns immediately.
 func withRetry[T any](
-	ctx context.Context, cfg retryConfig,
+	ctx context.Context,
+	cfg retryConfig,
 	fn func() (T, error, bool),
 ) (T, error) {
 
-	var zero T
+	var output T
 	var lastErr error
 	maxAttempts := max(cfg.maxRetries+1, 1)
 
@@ -41,11 +42,14 @@ func withRetry[T any](
 			break
 		}
 
-		// Equal jitter: half fixed exponential backoff, half randomised.
-		// Prevents synchronised retries from multiple crawlers hitting
-		// the same endpoint at identical intervals (thundering herd).
+		// Exponential backoff with small additive jitter.
+		// The exponential curve dominates — dashboards see predictable
+		// 500ms/1s/2s/... behaviour. The 50-200ms jitter is just enough
+		// to break synchronisation between crawlers without distorting
+		// the backoff shape.
 		backoff := cfg.baseDelay * time.Duration(math.Pow(2, float64(attempt)))
-		delay := backoff/2 + time.Duration(rand.Int64N(int64(backoff/2)))
+		jitter := jitterMinMs + rand.Int64N(jitterRangeMs)
+		delay := backoff + time.Duration(jitter)*time.Millisecond
 
 		if cfg.logger != nil {
 			cfg.logger.Warn("retrying transient error",
@@ -61,15 +65,17 @@ func withRetry[T any](
 		select {
 		case <-time.After(delay):
 		case <-ctx.Done():
-			return zero, ctx.Err()
+			return output, ctx.Err()
 		}
 	}
 
 	// Context cancellation takes precedence over the last transient error.
 	if ctx.Err() != nil {
-		return zero, ctx.Err()
+		return output, ctx.Err()
 	}
 
-	return zero, fmt.Errorf("%s after %d attempts: %w",
-		cfg.label, maxAttempts, lastErr)
+	return output,
+		fmt.Errorf(
+			"%s after %d attempts: %w",
+			cfg.label, maxAttempts, lastErr)
 }

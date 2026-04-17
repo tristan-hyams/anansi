@@ -18,6 +18,12 @@ const (
 	defaultMaxRetries = 2
 	baseRetryDelay    = 500 * time.Millisecond
 
+	// Additive jitter range (ms) — uniform random between min and min+range.
+	// Small additive jitter preserves the exponential backoff shape on
+	// dashboards while breaking synchronisation between crawlers.
+	jitterMinMs   = 50
+	jitterRangeMs = 150 // 50 + [0, 150) = [50, 200) ms
+
 	logKeyURL       = "url"
 	logKeyDepth     = "depth"
 	logKeyLinks     = "links"

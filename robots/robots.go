@@ -73,8 +73,9 @@ func Fetch(ctx context.Context, baseURL *url.URL, logger *slog.Logger) (*Rules, 
 		return nil, fmt.Errorf("building robots.txt request: %w", err)
 	}
 
-	req.Header.Set("User-Agent", userAgent)
-	req.Header.Set("Accept", "text/plain")
+	req.Header.Set("User-Agent", defaultUserAgent)
+	req.Header.Set("Accept", acceptHeader)
+	req.Header.Set("Accept-Language", acceptLanguageHeader)
 
 	resp, err := client.Do(req)
 	if err != nil {

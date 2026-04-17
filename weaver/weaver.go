@@ -101,7 +101,6 @@ func NewWeaver(
 func (w *Weaver) Weave(ctx context.Context) *Web {
 
 	start := time.Now()
-	w.logger.Info("crawl started", "origin", w.origin.String(), "workers", w.cfg.Workers)
 
 	var crawlCtx context.Context
 	var crawlCancel context.CancelFunc
@@ -123,7 +122,7 @@ func (w *Weaver) Weave(ctx context.Context) *Web {
 
 	wg.Wait()
 
-	return w.buildResult(start)
+	return w.buildWeb(start)
 }
 
 // monitorCompletion polls until the crawl is naturally complete.
@@ -148,8 +147,8 @@ func (w *Weaver) monitorCompletion(ctx context.Context, cancel context.CancelFun
 	}
 }
 
-// buildResult assembles the crawl summary.
-func (w *Weaver) buildResult(start time.Time) *Web {
+// buildWeb assembles the crawl summary.
+func (w *Weaver) buildWeb(start time.Time) *Web {
 
 	w.mu.Lock()
 	defer w.mu.Unlock()
@@ -187,6 +186,7 @@ func (w *Weaver) recordPage(pr PageResult) {
 // recordPage. Output is buffered per page and written in one call to
 // prevent interleaving between crawlers.
 func (w *Weaver) printPage(pr PageResult) {
+
 	if !w.cfg.LogLinks || w.output == nil {
 		return
 	}
