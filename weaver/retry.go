@@ -4,6 +4,8 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
+	"math"
+	"math/rand/v2"
 	"time"
 )
 
@@ -22,10 +24,10 @@ func withRetry[T any](
 	ctx context.Context, cfg retryConfig,
 	fn func() (T, error, bool),
 ) (T, error) {
-	maxAttempts := max(cfg.maxRetries+1, 1)
 
 	var zero T
 	var lastErr error
+	maxAttempts := max(cfg.maxRetries+1, 1)
 
 	for attempt := range maxAttempts {
 		result, err, retryable := fn()
@@ -39,7 +41,12 @@ func withRetry[T any](
 			break
 		}
 
-		delay := cfg.baseDelay << attempt
+		// Equal jitter: half fixed exponential backoff, half randomised.
+		// Prevents synchronised retries from multiple crawlers hitting
+		// the same endpoint at identical intervals (thundering herd).
+		backoff := cfg.baseDelay * time.Duration(math.Pow(2, float64(attempt)))
+		delay := backoff/2 + time.Duration(rand.Int64N(int64(backoff/2)))
+
 		if cfg.logger != nil {
 			cfg.logger.Warn("retrying transient error",
 				"label", cfg.label,
