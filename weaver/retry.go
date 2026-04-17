@@ -21,11 +21,12 @@ type retryConfig struct {
 // fn returns a result, an error, and whether the error is retryable.
 // On non-retryable errors or context cancellation, returns immediately.
 func withRetry[T any](
-	ctx context.Context, cfg retryConfig,
+	ctx context.Context,
+	cfg retryConfig,
 	fn func() (T, error, bool),
 ) (T, error) {
 
-	var zero T
+	var output T
 	var lastErr error
 	maxAttempts := max(cfg.maxRetries+1, 1)
 
@@ -64,15 +65,17 @@ func withRetry[T any](
 		select {
 		case <-time.After(delay):
 		case <-ctx.Done():
-			return zero, ctx.Err()
+			return output, ctx.Err()
 		}
 	}
 
 	// Context cancellation takes precedence over the last transient error.
 	if ctx.Err() != nil {
-		return zero, ctx.Err()
+		return output, ctx.Err()
 	}
 
-	return zero, fmt.Errorf("%s after %d attempts: %w",
-		cfg.label, maxAttempts, lastErr)
+	return output,
+		fmt.Errorf(
+			"%s after %d attempts: %w",
+			cfg.label, maxAttempts, lastErr)
 }

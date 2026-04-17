@@ -8,7 +8,7 @@ user-invocable: true
 
 Bootstrap three identical ML context shims and ensure the central context docs exist.
 
-The shim files (`.claude/CLAUDE.md`, `.github/copilot-instructions.md`, `AGENTS.md`) are **byte-for-byte identical in content** except for the file header and relative paths. They are dumb anchor points - redirecting any AI tool (Claude, Copilot, Codex) to the same partitioned context files. **No content divergence between shims.** Identity, philosophy, commands, workflow conventions - all live in the shared context files, never in a shim.
+The shim files (`.claude/CLAUDE.md`, `.github/copilot-instructions.md`, `AGENTS.md`) are identical except for the file header and relative paths. They are dumb anchor points - redirecting any AI tool (Claude, Copilot, Codex) to the same partitioned context files. **No content divergence between shims.** Identity, philosophy, commands, workflow conventions - all live in the shared context files, never in a shim.
 
 This pattern maximises context window efficacy by letting agents load only the partitions they need, and streamlines ML onboarding to any repo regardless of which tool the engineer uses.
 

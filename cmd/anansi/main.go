@@ -34,11 +34,11 @@ func main() {
 	}
 
 	weaverCfg := weaver.NewWeaverConfig(weaver.WeaverConfig{
-		Workers:     cfg.Workers,
-		Rate:        cfg.Rate,
-		MaxDepth:    cfg.MaxDepth,
-		Timeout:     cfg.Timeout,
-		LogLinks:    cfg.LogLinks,
+		Workers:      cfg.Workers,
+		Rate:         cfg.Rate,
+		MaxDepth:     cfg.MaxDepth,
+		Timeout:      cfg.Timeout,
+		LogLinks:     cfg.LogLinks,
 		MaxRetries:   cfg.MaxRetries,
 		MaxRedirects: cfg.MaxRedirects,
 		MaxDuration:  cfg.MaxDuration,
@@ -55,10 +55,13 @@ func main() {
 		fatal(err)
 	}
 
-	_, _ = fmt.Fprintf(os.Stderr, "results will be written to %s\n", outputDir)
+	wv, err := weaver.NewWeaver(ctx, weaverCfg, origin, logger, output)
+	if err != nil {
+		fatal(err)
+	}
 
 	logger.Info(
-		fmt.Sprintf("crawl starting for [%s]", cfg.Origin),
+		fmt.Sprintf("anansi weaving [%s]", cfg.Origin),
 		"origin", cfg.Origin,
 		"workers", cfg.Workers,
 		"rate", cfg.Rate,
@@ -66,11 +69,6 @@ func main() {
 		"timeout", cfg.Timeout,
 		"output_dir", outputDir,
 	)
-
-	wv, err := weaver.NewWeaver(ctx, weaverCfg, origin, logger, output)
-	if err != nil {
-		fatal(err)
-	}
 
 	web := wv.Weave(ctx)
 
