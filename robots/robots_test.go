@@ -262,5 +262,5 @@ func TestFetch_SetsUserAgentHeader(t *testing.T) {
 	_, err := robots.Fetch(context.Background(), mustParseURL(t, srv.URL), testLogger(&logBuf))
 	require.NoError(t, err)
 
-	assert.Equal(t, "Anansi", receivedUA)
+	assert.Equal(t, "Anansi Weaver; Go 1.26;", receivedUA)
 }
